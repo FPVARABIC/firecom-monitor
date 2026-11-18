@@ -1163,19 +1163,40 @@ legend {
 .logincard h1 {
   font-size: 30px;
 }
-.pages-login {
-  width: min(420px, 94vw);
-  border-top: 4px solid var(--yellow);
+.workspace-access {
+  padding: 20px;
 }
-.pages-login > button,
-.pages-login .formstack,
-.pages-login > .error,
-.pages-login > .pairing-code {
-  margin-top: 20px;
+.workspace-access p {
+  max-width: 65ch;
+  margin: 0 0 15px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.pairing-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: #fffaf0;
+  color: var(--navy);
+  border: 1px solid #e2d4ab;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.pairing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pairing-code {
+  line-height: 1.6;
+  margin: 3px 0 0;
 }
 .pairing-code strong {
-  margin-left: 8px;
-  color: var(--navy);
   font-family: ui-monospace, monospace;
   letter-spacing: 1px;
 }

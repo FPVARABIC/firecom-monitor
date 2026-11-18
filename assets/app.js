@@ -17194,12 +17194,20 @@ const react_1 = __importStar(require("react"));
 const model_1 = require("./model");
 const ui_1 = require("./ui");
 const fleet_1 = require("./fleet");
-function Compatibility() {
+async function loadCatalog(publicCatalog) {
+    if (!publicCatalog)
+        return (0, model_1.api)('/api/compatibility');
+    const json = document.querySelector('#public-compatibility')?.content.textContent;
+    if (!json)
+        throw new Error('De gepubliceerde apparaatcatalogus ontbreekt. Laad de pagina opnieuw.');
+    return JSON.parse(json);
+}
+function Compatibility({ publicCatalog = false }) {
     const [families, setFamilies] = (0, react_1.useState)(null), [asOf, setAsOf] = (0, react_1.useState)(''), [error, setError] = (0, react_1.useState)(''), [retry, setRetry] = (0, react_1.useState)(0);
     (0, react_1.useEffect)(() => {
         let current = true;
         setError('');
-        (0, model_1.api)('/api/compatibility')
+        loadCatalog(publicCatalog)
             .then((r) => {
             if (current) {
                 setFamilies(r.families);
@@ -17210,7 +17218,7 @@ function Compatibility() {
         return () => {
             current = false;
         };
-    }, [retry]);
+    }, [retry, publicCatalog]);
     if (error)
         return (react_1.default.createElement("div", { className: "error", role: "alert" },
             error,
@@ -18109,6 +18117,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const react_1 = __importStar(require("react"));
 const client_1 = require("react-dom/client");
+const react_dom_1 = require("react-dom");
 const model_1 = require("./model");
 const pages_connection_1 = require("./pages-connection");
 const ui_1 = require("./ui");
@@ -18215,9 +18224,32 @@ function Login({ onLogin }) {
                 err && (react_1.default.createElement("p", { className: "error", role: "alert" }, err)),
                 react_1.default.createElement("button", { className: "button primary", disabled: busy }, "Aanmelden")))));
 }
-function App({ endPages }) {
+const privateViews = {
+    apparaten: ['Apparatenregister', 'Verbind je werkruimte om geregistreerde apparaten, metingen en door apparaten gemelde posities te bekijken.'],
+    incidenten: ['Incidentenregister', 'Verbind je werkruimte om openstaande incidenten, hun prioriteit en de afhandeling te bekijken.'],
+    onderhoud: ['Onderhoudsplanning', 'Verbind je werkruimte om geplande bezoeken, apparaatcontroles en servicerapporten te bekijken.'],
+    reparaties: ['Reparatiedossiers', 'Verbind je werkruimte om reparaties, de werkplaatsstatus en eventuele leentoestellen te bekijken.'],
+    locaties: ['Servicelocaties en contractdekking', 'Verbind je werkruimte om klantlocaties, servicecontracten en de bijbehorende apparatuur te bekijken.'],
+};
+function PublicView({ page, id, connect }) {
+    if (page === 'overzicht' && !id)
+        return (react_1.default.createElement(overview_1.SetupOverview, { title: "Volg de apparatuur van je klanten", description: "Verbind je werkruimte om binnenkomende signalen, incidenten en onderhoud te volgen. De compatibiliteitscatalogus kun je direct bekijken.", action: connect }));
+    if (page === 'compatibiliteit' && !id)
+        return react_1.default.createElement(compatibility_1.Compatibility, { publicCatalog: true });
+    const view = Object.hasOwn(privateViews, page) ? privateViews[page] : undefined;
+    if (view && (!id || ['apparaten', 'incidenten', 'onderhoud', 'locaties'].includes(page)))
+        return (react_1.default.createElement(ui_1.Section, { title: view[0] },
+            react_1.default.createElement("div", { className: "workspace-access" },
+                react_1.default.createElement("p", null, view[1]),
+                connect)));
+    return react_1.default.createElement(ui_1.Empty, null,
+        "Deze pagina is niet beschikbaar. ",
+        react_1.default.createElement("a", { href: (0, overview_1.href)('overzicht') }, "Naar overzicht"));
+}
+function App({ publicPages, endPages }) {
     const [route, setRoute] = (0, react_1.useState)(readRoute), [session, setSession] = (0, react_1.useState)(null), [data, setData] = (0, react_1.useState)(null), [site, setSite] = (0, react_1.useState)(''), [notice, setNotice] = (0, react_1.useState)(''), [error, setError] = (0, react_1.useState)(''), [loading, setLoading] = (0, react_1.useState)(false), [unavailable, setUnavailable] = (0, react_1.useState)(false), [loadedAt, setLoadedAt] = (0, react_1.useState)(''), [menu, setMenu] = (0, react_1.useState)(false), [entry, setEntry] = (0, react_1.useState)(null), [selected, setSelected] = (0, react_1.useState)('');
     const generation = (0, react_1.useRef)(0);
+    const browsing = !!publicPages;
     const checkSession = (0, react_1.useCallback)(async () => {
         const s = await (0, model_1.api)('/api/session');
         if (typeof s.authenticated !== 'boolean')
@@ -18249,6 +18281,12 @@ function App({ endPages }) {
         catch (e) {
             if (id === generation.current) {
                 setUnavailable(true);
+                setData(null);
+                setSite('');
+                setLoadedAt('');
+                setEntry(null);
+                setSelected('');
+                setNotice('');
                 setError(e.message);
             }
             throw e;
@@ -18268,7 +18306,8 @@ function App({ endPages }) {
         }
     }, [checkSession]);
     (0, react_1.useEffect)(() => {
-        void init();
+        if (!browsing)
+            void init();
         const routeChange = () => {
             setRoute(readRoute());
             setMenu(false);
@@ -18282,6 +18321,8 @@ function App({ endPages }) {
             }
             generation.current++;
             setSession({ authenticated: false, mode: 'local' });
+            setLoadedAt('');
+            setSelected('');
             setSite('');
             setMenu(false);
             setNotice('');
@@ -18295,7 +18336,7 @@ function App({ endPages }) {
             window.removeEventListener('hashchange', routeChange);
             window.removeEventListener('session-expired', expired);
         };
-    }, [init, endPages]);
+    }, [init, endPages, browsing]);
     (0, react_1.useEffect)(() => {
         if (!session?.authenticated)
             return;
@@ -18354,14 +18395,14 @@ function App({ endPages }) {
             setError(e.message);
         }
     }
-    if (!session)
+    if (!session && !publicPages && !endPages)
         return (react_1.default.createElement("main", { className: "startup" },
             react_1.default.createElement(Brand, null),
             react_1.default.createElement("p", { role: "status" }, error || 'Werkruimte laden…'),
             error && react_1.default.createElement(fleet_1.Action, { onClick: init }, "Opnieuw proberen")));
-    if (!session.authenticated)
+    if (session && !session.authenticated && !publicPages && !endPages)
         return react_1.default.createElement(Login, { onLogin: init });
-    const user = session.user?.name || 'Gebruiker', role = session.user?.role || 'viewer', roleLabel = { admin: 'Beheerder', operator: 'Serviceoperator', viewer: 'Alleen lezen' }[role] || role, canWrite = role === 'operator' || role === 'admin';
+    const user = session?.user?.name || 'Gebruiker', role = session?.user?.role || 'viewer', roleLabel = { admin: 'Beheerder', operator: 'Serviceoperator', viewer: 'Alleen lezen' }[role] || role, canWrite = !!session?.authenticated && (role === 'operator' || role === 'admin');
     const device = data?.devices.find((x) => x.id === id), inc = data?.incidents.find((x) => x.id === id), visit = data?.visits.find((x) => x.id === id), location = data?.sites.find((x) => x.id === id);
     const detail = id &&
         (page === 'apparaten'
@@ -18383,6 +18424,7 @@ function App({ endPages }) {
         canWrite &&
         (page === 'apparaten' && !id ? (react_1.default.createElement(fleet_1.Action, { icon: "plus", onClick: () => add(data?.sites.length ? 'device' : 'site') }, data?.sites.length ? 'Apparaat toevoegen' : 'Servicelocatie toevoegen')) : page === 'locaties' && !id ? (react_1.default.createElement(fleet_1.Action, { icon: "plus", onClick: () => add('site') }, "Servicelocatie toevoegen")) : page === 'incidenten' && !id && data?.devices.some((d) => !site || d.site === site) ? (react_1.default.createElement(fleet_1.Action, { icon: "plus", onClick: () => add('incident') }, "Incident melden")) : null);
     const filterable = !unavailable && !!data?.sites.length && !id && page !== 'compatibiliteit' && !!navItem;
+    const connectButton = publicPages && (react_1.default.createElement(fleet_1.Action, { icon: "plug", disabled: publicPages.waiting, onClick: publicPages.connect }, publicPages.waiting ? 'Verbinding in behandeling' : 'Verbinden met werkruimte'));
     const mobileNav = nav.map((n) => (react_1.default.createElement("a", { "aria-current": page === n.id ? 'page' : undefined, key: n.id, className: 'navlink ' + (page === n.id ? 'active' : ''), href: (0, overview_1.href)(n.id), onClick: () => setMenu(false) },
         react_1.default.createElement(ui_1.Icon, { name: n.icon, size: 18 }),
         react_1.default.createElement("span", null, n.title),
@@ -18399,13 +18441,15 @@ function App({ endPages }) {
                 react_1.default.createElement("p", null, group),
                 mobileNav.filter((_, i) => nav[i].group === group))))),
             react_1.default.createElement("div", { className: "sidebottom" },
-                react_1.default.createElement("div", { className: "avatar" }, user.slice(0, 2).toLocaleUpperCase('nl')),
+                react_1.default.createElement("div", { className: "avatar" }, session?.authenticated ? user.slice(0, 2).toLocaleUpperCase('nl') : react_1.default.createElement(ui_1.Icon, { name: "plug", size: 17 })),
                 react_1.default.createElement("div", null,
-                    react_1.default.createElement("strong", null, user),
-                    user !== roleLabel && react_1.default.createElement("small", null, roleLabel)),
+                    react_1.default.createElement("strong", null, session?.authenticated ? user : 'Werkruimte'),
+                    session?.authenticated
+                        ? user !== roleLabel && react_1.default.createElement("small", null, roleLabel)
+                        : react_1.default.createElement("small", null, publicPages && !publicPages.waiting ? 'Niet verbonden' : 'Verbinding controleren…')),
                 endPages && (react_1.default.createElement("button", { title: "Verbinding verbreken", "aria-label": "Verbinding verbreken", className: "sidex", onClick: () => endPages() },
                     react_1.default.createElement(ui_1.Icon, { name: "exit", size: 17 }))),
-                session.mode === 'local' && (react_1.default.createElement("button", { title: "Afmelden", "aria-label": "Afmelden", className: "sidex", onClick: logout },
+                session?.mode === 'local' && (react_1.default.createElement("button", { title: "Afmelden", "aria-label": "Afmelden", className: "sidex", onClick: logout },
                     react_1.default.createElement(ui_1.Icon, { name: "exit", size: 17 }))))),
         react_1.default.createElement("div", { className: "workspace" },
             react_1.default.createElement("header", { className: "topbar" },
@@ -18422,7 +18466,7 @@ function App({ endPages }) {
                         year: 'numeric',
                         timeZone: 'Europe/Amsterdam',
                     }).format(new Date())),
-                    react_1.default.createElement("button", { className: 'iconbtn refresh ' + (loading ? 'spinning' : ''), disabled: loading, title: "Gegevens vernieuwen", "aria-label": "Gegevens vernieuwen", onClick: () => refresh().catch(() => { }) },
+                    session?.authenticated && react_1.default.createElement("button", { className: 'iconbtn refresh ' + (loading ? 'spinning' : ''), disabled: loading, title: "Gegevens vernieuwen", "aria-label": "Gegevens vernieuwen", onClick: () => refresh().catch(() => { }) },
                         react_1.default.createElement(ui_1.Icon, { name: "refresh", size: 17 })))),
             react_1.default.createElement("main", { id: "maincontent", tabIndex: -1 },
                 id && navItem && (react_1.default.createElement("a", { className: "back", href: (0, overview_1.href)(page) },
@@ -18439,18 +18483,21 @@ function App({ endPages }) {
                             react_1.default.createElement("select", { "aria-label": "Filter op administratieve servicelocatie", value: site, onChange: (e) => setSite(e.target.value) },
                                 react_1.default.createElement("option", { value: "" }, "Alle servicelocaties"),
                                 data?.sites.map((s) => (react_1.default.createElement("option", { value: s.name, key: s.id }, s.name)))))),
-                        action)),
+                        action,
+                        publicPages && page === 'compatibiliteit' && !id && connectButton)),
+                publicPages?.status,
+                publicPages && react_1.default.createElement(PublicView, { page: page, id: id, connect: connectButton }),
                 error && (react_1.default.createElement("p", { className: "error", role: "alert" },
                     unavailable && react_1.default.createElement("strong", null, "Actuele gegevens niet beschikbaar. "),
                     error,
                     ' ',
-                    react_1.default.createElement("button", { className: "textbtn", onClick: () => refresh().catch(() => { }) }, "Opnieuw laden"))),
-                !data && !error && react_1.default.createElement("p", { role: "status" }, "Gegevens laden\u2026"),
+                    react_1.default.createElement("button", { className: "textbtn", onClick: session?.authenticated ? () => refresh().catch(() => { }) : init }, "Opnieuw laden"))),
+                !publicPages && !data && !error && react_1.default.createElement("p", { role: "status" }, "Gegevens laden\u2026"),
                 data &&
                     !unavailable &&
                     (!navItem || (id && !detail) ? (react_1.default.createElement(ui_1.Empty, null,
                         "Deze pagina is niet beschikbaar. ",
-                        react_1.default.createElement("a", { href: (0, overview_1.href)('overzicht') }, "Naar overzicht"))) : page === 'overzicht' ? (react_1.default.createElement(overview_1.Overview, { data: data, site: site, canWrite: canWrite, onRegister: () => add(data.sites.length ? 'device' : 'site') })) : page === 'apparaten' ? (device && id ? (react_1.default.createElement(fleet_1.DeviceDetail, { key: id, data: data, d: device, save: canWrite ? save : undefined, newIncident: canWrite ? () => add('incident', device.id) : undefined })) : (react_1.default.createElement(fleet_1.Fleet, { data: data, site: site }))) : page === 'incidenten' ? (inc && id ? (react_1.default.createElement(fleet_1.IncidentDetail, { key: id, i: inc, data: data, save: save, canWrite: canWrite })) : (react_1.default.createElement(fleet_1.Incidents, { data: data, site: site }))) : page === 'onderhoud' ? (visit && id ? (react_1.default.createElement(service_1.VisitDetail, { key: id, data: data, v: visit, save: save, canWrite: canWrite })) : (react_1.default.createElement(service_1.Visits, { data: data, site: site }))) : page === 'locaties' ? (react_1.default.createElement(service_1.Sites, { hosted: session.mode === 'hosted', key: id, data: data, detail: id, site: site, save: save, canWrite: canWrite })) : page === 'reparaties' ? (react_1.default.createElement(repairs_1.Repairs, { data: data, site: site, canWrite: canWrite })) : (react_1.default.createElement(compatibility_1.Compatibility, null))),
+                        react_1.default.createElement("a", { href: (0, overview_1.href)('overzicht') }, "Naar overzicht"))) : page === 'overzicht' ? (react_1.default.createElement(overview_1.Overview, { data: data, site: site, canWrite: canWrite, onRegister: () => add(data.sites.length ? 'device' : 'site') })) : page === 'apparaten' ? (device && id ? (react_1.default.createElement(fleet_1.DeviceDetail, { key: id, data: data, d: device, save: canWrite ? save : undefined, newIncident: canWrite ? () => add('incident', device.id) : undefined })) : (react_1.default.createElement(fleet_1.Fleet, { data: data, site: site }))) : page === 'incidenten' ? (inc && id ? (react_1.default.createElement(fleet_1.IncidentDetail, { key: id, i: inc, data: data, save: save, canWrite: canWrite })) : (react_1.default.createElement(fleet_1.Incidents, { data: data, site: site }))) : page === 'onderhoud' ? (visit && id ? (react_1.default.createElement(service_1.VisitDetail, { key: id, data: data, v: visit, save: save, canWrite: canWrite })) : (react_1.default.createElement(service_1.Visits, { data: data, site: site }))) : page === 'locaties' ? (react_1.default.createElement(service_1.Sites, { hosted: session?.mode === 'hosted', key: id, data: data, detail: id, site: site, save: save, canWrite: canWrite })) : page === 'reparaties' ? (react_1.default.createElement(repairs_1.Repairs, { data: data, site: site, canWrite: canWrite })) : (react_1.default.createElement(compatibility_1.Compatibility, null))),
                 loadedAt && (react_1.default.createElement("footer", { className: "syncfoot" },
                     react_1.default.createElement(ui_1.Icon, { name: "refresh", size: 13 }),
                     " Laatst bijgewerkt om",
@@ -18465,7 +18512,7 @@ function App({ endPages }) {
         menu && (react_1.default.createElement(ui_1.Modal, { title: "Navigatie", onClose: () => setMenu(false) },
             react_1.default.createElement("nav", { className: "mobilenav", "aria-label": "Mobiele navigatie" }, mobileNav),
             endPages && (react_1.default.createElement(fleet_1.Action, { kind: "secondary", icon: "exit", onClick: () => endPages() }, "Verbinding verbreken")),
-            session.mode === 'local' && (react_1.default.createElement(fleet_1.Action, { kind: "secondary", icon: "exit", onClick: logout }, "Afmelden")))),
+            session?.mode === 'local' && (react_1.default.createElement(fleet_1.Action, { kind: "secondary", icon: "exit", onClick: logout }, "Afmelden")))),
         entry && data && (react_1.default.createElement(ui_1.Modal, { title: entry === 'site'
                 ? 'Servicelocatie toevoegen'
                 : entry === 'device'
@@ -18479,61 +18526,102 @@ function App({ endPages }) {
 }
 function PagesApp({ connection, challenge }) {
     const [active, setActive] = (0, react_1.useState)(false);
-    const [waiting, setWaiting] = (0, react_1.useState)(Boolean(challenge));
+    const [waiting, setWaiting] = (0, react_1.useState)(!!challenge);
     const [code, setCode] = (0, react_1.useState)('');
-    const [message, setMessage] = (0, react_1.useState)('');
-    const end = (0, react_1.useCallback)((reason) => connection.disconnect(reason), [connection]);
-    const report = (error) => {
-        setMessage(error.message);
+    const [message, setMessage] = (0, react_1.useState)(null);
+    const attempt = (0, react_1.useRef)(0);
+    const finish = (0, react_1.useCallback)((text, error) => {
+        setActive(false);
         setCode('');
         setWaiting(false);
-    };
+        setMessage(text ? { text, error } : null);
+    }, []);
+    const end = (0, react_1.useCallback)((reason, error = !!reason) => {
+        attempt.current++;
+        connection.disconnect(reason);
+        finish(reason || 'De werkruimte is losgekoppeld.', error);
+    }, [connection, finish]);
     (0, react_1.useEffect)(() => {
         const disconnected = (event) => {
-            setActive(false);
-            report(new Error(event.detail));
+            attempt.current++;
+            finish(event.detail, true);
         };
-        const abandon = () => connection.disconnect();
+        const abandon = () => {
+            // Remove private records before a back/forward-cache snapshot can restore this document.
+            (0, react_dom_1.flushSync)(() => end());
+        };
         const focus = () => connection.focus();
         window.addEventListener('firecom-pages-closed', disconnected);
         window.addEventListener('firecom-private-focus', focus);
         window.addEventListener('pagehide', abandon);
         if (challenge) {
+            const id = ++attempt.current;
             connection.resume(challenge).then(() => {
+                if (attempt.current !== id)
+                    return;
                 setWaiting(false);
+                setMessage(null);
                 setActive(true);
-            }).catch(report);
+            }).catch((error) => {
+                if (attempt.current === id)
+                    finish(error.message, true);
+            });
         }
         return () => {
+            attempt.current++;
             window.removeEventListener('firecom-pages-closed', disconnected);
             window.removeEventListener('firecom-private-focus', focus);
             window.removeEventListener('pagehide', abandon);
             connection.disconnect();
         };
-    }, [connection, challenge]);
+    }, [connection, challenge, end, finish]);
     function begin() {
+        const id = ++attempt.current;
         const nonce = crypto.randomUUID();
-        setMessage('');
+        setMessage(null);
         setCode(nonce.slice(0, 8).toUpperCase());
         setWaiting(true);
-        connection.connect(nonce).catch(report);
+        connection.connect(nonce, window.location.hash).then(() => {
+            if (attempt.current === id)
+                finish('De verbonden werkruimte is in een nieuw GitHub-tabblad geopend.', false);
+        }).catch((error) => {
+            if (attempt.current === id)
+                finish(error.message, true);
+        });
     }
     if (active)
-        return react_1.default.createElement(App, { endPages: end });
-    return (react_1.default.createElement("main", { className: "login" },
-        react_1.default.createElement("section", { className: "logincard pages-login" },
-            react_1.default.createElement(Brand, null),
-            react_1.default.createElement("h1", null, "Werkruimte openen"),
-            react_1.default.createElement("p", null, "Meld je aan in het aparte venster en bevestig daar de verbinding. Houd dat venster open terwijl je hier werkt."),
+        return react_1.default.createElement(App, { key: "connected", endPages: end });
+    const status = waiting ? (react_1.default.createElement("section", { className: "pairing-notice", "aria-label": "Werkruimte verbinden" },
+        react_1.default.createElement("div", { role: "status" },
+            react_1.default.createElement("strong", null, code ? 'Bevestig de verbinding in het privévenster' : 'Verbinding met de werkruimte controleren…'),
             code && react_1.default.createElement("p", { className: "pairing-code" },
-                "Controlecode ",
-                react_1.default.createElement("strong", null, code)),
-            message && react_1.default.createElement("p", { className: "error", role: "alert" }, message),
-            waiting ? (react_1.default.createElement("div", { className: "formstack" },
-                react_1.default.createElement("p", { role: "status" }, code ? 'Wachten op je bevestiging…' : 'Verbinding met de werkruimte controleren…'),
-                react_1.default.createElement("button", { className: "button secondary", onClick: () => end('De verbinding is geannuleerd.') }, "Annuleren"))) : (react_1.default.createElement("button", { className: "button primary", onClick: begin },
-                react_1.default.createElement(ui_1.Icon, { name: "plug", size: 17 }),
-                " Verbinden met werkruimte")))));
+                "Vergelijk de controlecode ",
+                react_1.default.createElement("strong", null, code),
+                " en houd het priv\u00E9venster open.")),
+        react_1.default.createElement("div", { className: "pairing-actions" },
+            code && react_1.default.createElement(fleet_1.Action, { kind: "secondary", onClick: () => connection.focus() }, "Naar priv\u00E9venster"),
+            react_1.default.createElement(fleet_1.Action, { kind: "secondary", onClick: () => end('De verbindingsaanvraag is geannuleerd.', false) }, "Annuleren")))) : message && (react_1.default.createElement("p", { className: message.error ? 'error' : 'infobar', role: message.error ? 'alert' : 'status' }, message.text));
+    return react_1.default.createElement(App, { key: "public", publicPages: { connect: begin, waiting, status } });
+}
+function restoredRoute(hash) {
+    if (hash && hash.length <= 1024) {
+        const match = /^#\/([a-z]+)(?:\/([^/?#]+))?$/.exec(hash);
+        if (match && nav.some(({ id }) => id === match[1])) {
+            if (!match[2])
+                return (0, overview_1.href)(match[1]);
+            if (['apparaten', 'incidenten', 'onderhoud', 'locaties'].includes(match[1])) {
+                try {
+                    const id = decodeURIComponent(match[2]);
+                    if (!/[\x00-\x1f\x7f]/.test(id))
+                        return (0, overview_1.href)(match[1], id);
+                }
+                catch {
+                    // An invalid encoded detail identifier falls back to the overview.
+                }
+            }
+        }
+    }
+    return (0, overview_1.href)('overzicht');
 }
 const root = (0, client_1.createRoot)(document.getElementById('root'));
 if (document.documentElement.dataset.hosting === 'github-pages') {
@@ -18541,9 +18629,12 @@ if (document.documentElement.dataset.hosting === 'github-pages') {
         window.dispatchEvent(new CustomEvent('firecom-pages-closed', { detail }));
     });
     (0, model_1.setWorkspaceRequest)((path, method, body) => connection.request(path, method, body));
-    const id = window.location.hash.match(/^#firecom-pair=(.+)$/)?.[1];
-    if (id)
-        history.replaceState(null, '', window.location.pathname + '#/overzicht');
+    const returned = window.location.hash.startsWith('#firecom-pair=')
+        ? new URLSearchParams(window.location.hash.slice(1))
+        : null;
+    const id = returned?.get('firecom-pair');
+    if (returned)
+        history.replaceState(null, '', window.location.pathname + restoredRoute(returned.get('route')));
     root.render(react_1.default.createElement(PagesApp, { connection: connection, challenge: id && pages_connection_1.pairingId.test(id) ? id : null }));
 }
 else {
@@ -18718,6 +18809,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.activeIncidents = exports.href = void 0;
 exports.LinkMore = LinkMore;
 exports.IncidentRows = IncidentRows;
+exports.SetupOverview = SetupOverview;
 exports.Overview = Overview;
 const react_1 = __importDefault(require("react"));
 const model_1 = require("./model");
@@ -18790,23 +18882,13 @@ function FleetPlot({ devices }) {
                 })),
                 react_1.default.createElement("b", null, g.devices.length))))))));
 }
-function SetupOverview({ hasSite, canWrite, onRegister, }) {
+function SetupOverview({ title, description, action, }) {
     return (react_1.default.createElement(react_1.default.Fragment, null,
         react_1.default.createElement("section", { className: "setuphero", "aria-labelledby": "setup-title" },
             react_1.default.createElement("div", { className: "herocopy" },
-                react_1.default.createElement("h2", { id: "setup-title" }, canWrite
-                    ? hasSite
-                        ? 'Registreer je eerste apparaat'
-                        : 'Richt je werkruimte in'
-                    : 'Nog geen apparaten geregistreerd'),
-                react_1.default.createElement("p", null, canWrite
-                    ? hasSite
-                        ? 'Koppel een echt apparaat aan de servicelocatie. Ontvangen metingen verschijnen daarna in dit overzicht.'
-                        : 'Voeg een klant en een servicelocatie toe. Daarna kun je apparaten registreren en hun metingen volgen.'
-                    : 'Hier verschijnen de apparaten en metingen die je serviceteam registreert.'),
-                canWrite && (react_1.default.createElement("button", { className: "button primary", onClick: onRegister },
-                    react_1.default.createElement(ui_1.Icon, { name: "plus", size: 17 }),
-                    hasSite ? 'Apparaat toevoegen' : 'Servicelocatie toevoegen'))),
+                react_1.default.createElement("h2", { id: "setup-title" }, title),
+                react_1.default.createElement("p", null, description),
+                action),
             react_1.default.createElement("div", { className: "signalpath", role: "img", "aria-label": "Een apparaat stuurt metingen via een collector naar deze werkruimte" },
                 react_1.default.createElement("span", { className: "signalstage" },
                     react_1.default.createElement("span", { className: "sigicon" },
@@ -18863,8 +18945,16 @@ function LocationRows({ devices }) {
         position.freshness === 'stale' && react_1.default.createElement(ui_1.Badge, { value: "stale" }))))) : (react_1.default.createElement(ui_1.Empty, null, "Geen posities ontvangen van de apparaten in deze selectie."))));
 }
 function Overview({ data, site, canWrite, onRegister, }) {
-    if (!data.devices.length)
-        return react_1.default.createElement(SetupOverview, { hasSite: data.sites.length > 0, canWrite: canWrite, onRegister: onRegister });
+    if (!data.devices.length) {
+        const hasSite = data.sites.length > 0;
+        return (react_1.default.createElement(SetupOverview, { title: canWrite ? (hasSite ? 'Registreer je eerste apparaat' : 'Richt je werkruimte in') : 'Nog geen apparaten geregistreerd', description: canWrite
+                ? hasSite
+                    ? 'Koppel een echt apparaat aan de servicelocatie. Ontvangen metingen verschijnen daarna in dit overzicht.'
+                    : 'Voeg een klant en een servicelocatie toe. Daarna kun je apparaten registreren en hun metingen volgen.'
+                : 'Hier verschijnen de apparaten en metingen die je serviceteam registreert.', action: canWrite && (react_1.default.createElement("button", { className: "button primary", onClick: onRegister },
+                react_1.default.createElement(ui_1.Icon, { name: "plus", size: 17 }),
+                hasSite ? 'Apparaat toevoegen' : 'Servicelocatie toevoegen')) }));
+    }
     const devices = data.devices.filter((d) => !site || d.site === site), incidents = (0, exports.activeIncidents)(data.incidents.filter((x) => !site || x.site === site)).sort((a, b) => attentionScore(a) - attentionScore(b) || b.openedAt.localeCompare(a.openedAt));
     const visits = data.visits
         .filter((v) => (!site || v.site === site) && v.status !== 'completed')
@@ -18981,7 +19071,10 @@ class PagesConnection {
         this.onDisconnect = onDisconnect;
     }
     focus() {
-        this.peer?.focus();
+        try {
+            this.peer?.focus();
+        }
+        catch { /* Browsers may require a manual tab switch. */ }
     }
     disconnect(reason = 'De verbinding met de werkruimte is gesloten.') {
         const wasConnected = this.connected;
@@ -19006,15 +19099,34 @@ class PagesConnection {
         if (wasConnected)
             this.onDisconnect(reason);
     }
-    connect(nonce = crypto.randomUUID()) {
+    connect(nonce = crypto.randomUUID(), returnRoute = '') {
         this.disconnect();
-        const popup = this.browser.open(exports.workspaceOrigin + '/pages-connect#' + nonce, '_blank');
+        const entry = new URL('/pages-connect', exports.workspaceOrigin);
+        entry.hash = nonce + (returnRoute.startsWith('#/') && returnRoute.length <= 1024
+            ? '&' + new URLSearchParams({ route: returnRoute }) : '');
+        let popup;
+        try {
+            popup = this.browser.open(entry.href, '_blank');
+        }
+        catch {
+            popup = null;
+        }
         if (!popup)
             return Promise.reject(new Error('Sta pop-ups voor deze pagina toe en probeer het opnieuw.'));
         this.peer = popup;
-        // Approval returns to the official GitHub URL. This original page never receives a port.
-        return new Promise((_resolve, reject) => {
+        // A successful handoff opens the connected workspace in a different GitHub tab.
+        return new Promise((resolve, reject) => {
             this.rejectHandshake = reject;
+            // Only acknowledge the handoff here. The new tab owns the authenticated channel.
+            const transferred = (event) => {
+                if (event.origin !== exports.workspaceOrigin || event.source !== popup ||
+                    event.data?.type !== 'firecom-pages.transferred' || event.data.nonce !== nonce)
+                    return;
+                this.rejectHandshake = null;
+                this.disconnect();
+                resolve();
+            };
+            this.browser.addEventListener('message', transferred);
             const timer = this.browser.setTimeout(() => this.disconnect(reconnect), 5 * 60 * 1000);
             const watch = this.browser.setInterval(() => {
                 if (popup.closed)
@@ -19023,6 +19135,7 @@ class PagesConnection {
             this.cleanup = () => {
                 this.browser.clearTimeout(timer);
                 this.browser.clearInterval(watch);
+                this.browser.removeEventListener('message', transferred);
             };
         });
     }
@@ -19038,8 +19151,8 @@ class PagesConnection {
                 const sender = event.source;
                 if (event.data?.type === 'firecom-pages.probe' && !this.port) {
                     // The real approval popup proves knowledge of our return challenge in its next message.
-                    sender.postMessage({ type: 'firecom-pages.hello', nonce }, exports.workspaceOrigin);
                     this.peer = sender;
+                    sender.postMessage({ type: 'firecom-pages.hello', nonce }, exports.workspaceOrigin);
                     return;
                 }
                 if (!this.peer || sender !== this.peer || this.port ||
@@ -19099,6 +19212,18 @@ class PagesConnection {
                 this.browser.clearInterval(watch);
                 this.browser.removeEventListener('message', handleMessage);
             };
+            // The new tab may load after the first probe. A backgrounded private tab's
+            // interval can be throttled, so initiate the same handshake immediately.
+            const opener = this.browser.opener;
+            if (opener && !opener.closed) {
+                try {
+                    this.peer = opener;
+                    opener.postMessage({ type: 'firecom-pages.hello', nonce }, exports.workspaceOrigin);
+                }
+                catch {
+                    this.peer = null;
+                }
+            }
         });
     }
     request(path, method, body) {
