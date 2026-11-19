@@ -17330,6 +17330,21 @@ function instant(input) {
     const date = new Date(input);
     return Number.isFinite(date.getTime()) && localTime(date) === input ? date.toISOString() : '';
 }
+function DateTimeField({ title, value, onChange, required = false }) {
+    const [date = '', time = ''] = value.split('T');
+    const update = (day, clock) => onChange(day || clock ? day + 'T' + clock : '');
+    return react_1.default.createElement("fieldset", { className: "datetimeparts" },
+        react_1.default.createElement("legend", null,
+            title,
+            " (",
+            timeZone,
+            ")"),
+        react_1.default.createElement("div", { className: "pair" },
+            react_1.default.createElement(ui_1.Field, { title: "Datum" },
+                react_1.default.createElement("input", { type: "date", value: date, required: required || Boolean(time), onChange: e => update(e.target.value, time) })),
+            react_1.default.createElement(ui_1.Field, { title: "Tijd" },
+                react_1.default.createElement("input", { type: "time", value: time, required: required || Boolean(date), onChange: e => update(date, e.target.value) }))));
+}
 function Grants({ items, data, remove, }) {
     return (react_1.default.createElement(react_1.default.Fragment, null, items.map((item) => {
         const device = data.devices.find((d) => d.id === item.deviceId);
@@ -17447,10 +17462,8 @@ function EditCoverage({ contract, data, base, cancel, saved, reload, }) {
                 : 'Vanaf de ingangsdatum vervalt de dekking voor alle apparaatfuncties van dit contract.'),
             react_1.default.createElement(Grants, { items: items, data: data }),
             note && react_1.default.createElement("p", null, note))) : (react_1.default.createElement(react_1.default.Fragment, null,
-            react_1.default.createElement(ui_1.Field, { title: 'Ingang (' + timeZone + ')' },
-                react_1.default.createElement("input", { type: "datetime-local", required: true, value: start, onChange: (e) => setStart(e.target.value) })),
-            react_1.default.createElement(ui_1.Field, { title: 'Einde, optioneel (' + timeZone + ')' },
-                react_1.default.createElement("input", { type: "datetime-local", value: end, onChange: (e) => setEnd(e.target.value) })),
+            react_1.default.createElement(DateTimeField, { title: "Ingang", value: start, onChange: setStart, required: true }),
+            react_1.default.createElement(DateTimeField, { title: "Einde, optioneel", value: end, onChange: setEnd }),
             react_1.default.createElement("h3", null,
                 "Gedekte apparaatfuncties (",
                 items.length,
@@ -17459,7 +17472,7 @@ function EditCoverage({ contract, data, base, cancel, saved, reload, }) {
             react_1.default.createElement("fieldset", { className: "formstack" },
                 react_1.default.createElement("legend", null, "Apparaatfunctie toevoegen"),
                 react_1.default.createElement(ui_1.Field, { title: "Apparaat" },
-                    react_1.default.createElement("select", { "aria-label": "Apparaat", value: deviceId, onChange: (e) => {
+                    react_1.default.createElement(ui_1.Select, { "aria-label": "Apparaat", value: deviceId, onChange: (e) => {
                             setDeviceId(e.target.value);
                             setCode('');
                         } },
@@ -17472,7 +17485,7 @@ function EditCoverage({ contract, data, base, cancel, saved, reload, }) {
                     react_1.default.createElement("input", { list: "contract-function-codes", value: code, maxLength: 100, disabled: !deviceId, onChange: (e) => setCode(e.target.value) })),
                 react_1.default.createElement("datalist", { id: "contract-function-codes" }, codes.map((code) => (react_1.default.createElement("option", { key: code, value: code }, model_1.measure[code] || code)))),
                 react_1.default.createElement(ui_1.Field, { title: "Dienst" },
-                    react_1.default.createElement("select", { "aria-label": "Dienst", value: service, onChange: (e) => setService(e.target.value) }, Object.entries(services).map(([key, name]) => (react_1.default.createElement("option", { key: key, value: key }, name))))),
+                    react_1.default.createElement(ui_1.Select, { "aria-label": "Dienst", value: service, onChange: (e) => setService(e.target.value) }, Object.entries(services).map(([key, name]) => (react_1.default.createElement("option", { key: key, value: key }, name))))),
                 react_1.default.createElement(fleet_1.Action, { kind: "secondary", icon: "plus", disabled: !deviceId || !code.trim() || items.length >= 250, onClick: add }, "Toevoegen")),
             react_1.default.createElement(ui_1.Field, { title: "Toelichting (optioneel)" },
                 react_1.default.createElement("textarea", { rows: 2, value: note, maxLength: 500, onChange: (e) => setNote(e.target.value) })))),
@@ -17541,8 +17554,7 @@ function ContractCoverage({ contract, data, close }) {
                 setNotice('');
                 inspect(at);
             } },
-            react_1.default.createElement(ui_1.Field, { title: 'Peildatum en tijd (' + timeZone + ')' },
-                react_1.default.createElement("input", { type: "datetime-local", required: true, value: clock, onChange: (e) => setClock(e.target.value) })),
+            react_1.default.createElement(DateTimeField, { title: "Peildatum en tijd", value: clock, onChange: setClock, required: true }),
             react_1.default.createElement("div", { className: "formactions" },
                 react_1.default.createElement(fleet_1.Action, { kind: "secondary", onClick: () => {
                         setNotice('');
@@ -17642,6 +17654,7 @@ const react_1 = __importStar(require("react"));
 const model_1 = require("./model");
 const ui_1 = require("./ui");
 const overview_1 = require("./overview");
+const moxa_channel_1 = require("./moxa-channel");
 function Search({ value, onChange, placeholder, }) {
     return (react_1.default.createElement("label", { className: "searchbox" },
         react_1.default.createElement(ui_1.Icon, { name: "search", size: 17 }),
@@ -17672,14 +17685,14 @@ function Fleet({ data, site }) {
     return (react_1.default.createElement("section", { className: "panel" },
         react_1.default.createElement("div", { className: "filters" },
             react_1.default.createElement(Search, { value: query, onChange: setQuery, placeholder: "Zoek naam, model of serienummer" }),
-            locations.length > 0 && (react_1.default.createElement("select", { "aria-label": "Filter op gemelde positie", value: positionFilter, onChange: (e) => setPosition(e.target.value) },
+            locations.length > 0 && (react_1.default.createElement(ui_1.Select, { "aria-label": "Filter op gemelde positie", value: positionFilter, onChange: (e) => setPosition(e.target.value) },
                 react_1.default.createElement("option", { value: "" }, "Alle gemelde posities"),
                 react_1.default.createElement("option", { value: "missing" }, "Geen locatie ontvangen"),
                 locations.map((name) => (react_1.default.createElement("option", { key: name, value: 'p:' + name }, name))))),
-            react_1.default.createElement("select", { "aria-label": "Categorie", value: family, onChange: (e) => setFamily(e.target.value) },
+            react_1.default.createElement(ui_1.Select, { "aria-label": "Categorie", value: family, onChange: (e) => setFamily(e.target.value) },
                 react_1.default.createElement("option", { value: "" }, "Alle categorie\u00EBn"),
                 Object.entries(model_1.category).map(([key, name]) => (react_1.default.createElement("option", { key: key, value: key }, name)))),
-            react_1.default.createElement("select", { "aria-label": "Apparaatstatus", value: state, onChange: (e) => setState(e.target.value) },
+            react_1.default.createElement(ui_1.Select, { "aria-label": "Apparaatstatus", value: state, onChange: (e) => setState(e.target.value) },
                 react_1.default.createElement("option", { value: "" }, "Alle statussen"),
                 ['ok', 'warning', 'fault', 'unknown', 'stale', 'unseen', 'manual'].map((s) => (react_1.default.createElement("option", { value: s, key: s }, (0, model_1.label)(s)))))),
         react_1.default.createElement("div", { className: "tablewrap" },
@@ -17703,14 +17716,14 @@ function Fleet({ data, site }) {
                                     d.model,
                                     " \u00B7 ",
                                     d.id)))),
-                    react_1.default.createElement("td", null,
+                    react_1.default.createElement("td", { "data-label": "Laatst gemelde positie" },
                         react_1.default.createElement("span", { className: "fleetlocation" }, d.reportedLocation ? (0, model_1.positionTitle)(d.reportedLocation) : 'Geen locatie ontvangen'),
                         d.reportedLocation && (react_1.default.createElement("small", { className: "locstamp" },
                             d.reportedLocation.freshness === 'stale' ? 'Verouderd · ' : '',
                             (0, model_1.when)(d.reportedLocation.at)))),
-                    react_1.default.createElement("td", null,
+                    react_1.default.createElement("td", { "data-label": "Status" },
                         react_1.default.createElement(ui_1.Badge, { value: (0, model_1.displayDeviceState)(d) })),
-                    react_1.default.createElement("td", null, (0, model_1.when)(d.lastSeen)),
+                    react_1.default.createElement("td", { "data-label": "Laatste registratie" }, (0, model_1.when)(d.lastSeen)),
                     react_1.default.createElement("td", null,
                         react_1.default.createElement("a", { className: "iconbtn", href: (0, overview_1.href)('apparaten', d.id), "aria-label": 'Open ' + d.name },
                             react_1.default.createElement(ui_1.Icon, { name: "chevron", size: 16 }))))))))),
@@ -17766,6 +17779,7 @@ function EditMaxAge({ device, save, close }) {
 }
 function DeviceDetail({ data, d, newIncident, save, }) {
     const [editAge, setEditAge] = (0, react_1.useState)(false);
+    const [editChannel, setEditChannel] = (0, react_1.useState)(false);
     const [obs, setObs] = (0, react_1.useState)([]), [episodes, setEpisodes] = (0, react_1.useState)([]), [cursor, setCursor] = (0, react_1.useState)(null), [err, setErr] = (0, react_1.useState)(''), [busy, setBusy] = (0, react_1.useState)(false), [attempt, setAttempt] = (0, react_1.useState)(0);
     const url = '/api/devices/' + encodeURIComponent(d.id) + '/observations?limit=50';
     (0, react_1.useEffect)(() => {
@@ -17805,7 +17819,9 @@ function DeviceDetail({ data, d, newIncident, save, }) {
     }
     return (react_1.default.createElement(react_1.default.Fragment, null,
         react_1.default.createElement("div", { className: "detailgrid" },
-            react_1.default.createElement(ui_1.Section, { title: "Apparaatgegevens", action: save && (react_1.default.createElement(Action, { kind: "secondary", onClick: () => setEditAge(true) }, "Meetleeftijd wijzigen")) },
+            react_1.default.createElement(ui_1.Section, { title: "Apparaatgegevens", action: save && (react_1.default.createElement("div", { className: "formactions" },
+                    react_1.default.createElement(Action, { kind: "secondary", onClick: () => setEditAge(true) }, "Meetleeftijd wijzigen"),
+                    d.category === 'espa' && react_1.default.createElement(Action, { kind: "secondary", onClick: () => setEditChannel(true) }, "Moxa-ingang toewijzen"))) },
                 react_1.default.createElement(ui_1.DetailList, { items: [
                         ['Status', react_1.default.createElement(ui_1.Badge, { value: (0, model_1.displayDeviceState)(d) })],
                         ['Categorie', model_1.category[d.category]],
@@ -17848,7 +17864,7 @@ function DeviceDetail({ data, d, newIncident, save, }) {
                 ' ',
                 react_1.default.createElement(Action, { kind: "secondary", onClick: () => setAttempt((n) => n + 1) }, "Opnieuw laden"))),
             obs.length ? (react_1.default.createElement("div", { className: "tablewrap" },
-                react_1.default.createElement("table", null,
+                react_1.default.createElement("table", { className: "historytable" },
                     react_1.default.createElement("thead", null,
                         react_1.default.createElement("tr", null,
                             react_1.default.createElement("th", null, "Tijd"),
@@ -17857,12 +17873,12 @@ function DeviceDetail({ data, d, newIncident, save, }) {
                             react_1.default.createElement("th", null, "Status"),
                             react_1.default.createElement("th", null, "Bron"))),
                     react_1.default.createElement("tbody", null, obs.map((o) => (react_1.default.createElement("tr", { key: o.id },
-                        react_1.default.createElement("td", null, (0, model_1.when)(o.at, true)),
-                        react_1.default.createElement("td", null, model_1.measure[o.metric] || o.metric),
-                        react_1.default.createElement("td", null, (0, model_1.valueText)(o.value, o.unit)),
-                        react_1.default.createElement("td", null,
+                        react_1.default.createElement("td", { "data-label": "Tijd" }, (0, model_1.when)(o.at, true)),
+                        react_1.default.createElement("td", { "data-label": "Meetpunt" }, model_1.measure[o.metric] || o.metric),
+                        react_1.default.createElement("td", { "data-label": "Waarde" }, (0, model_1.valueText)(o.value, o.unit)),
+                        react_1.default.createElement("td", { "data-label": "Status" },
                             react_1.default.createElement(ui_1.Badge, { value: o.health })),
-                        react_1.default.createElement("td", null, model_1.sourceName[o.source] || o.source)))))))) : (react_1.default.createElement(ui_1.Empty, null, busy ? 'Metingen laden…' : 'Geen meetgegevens voor dit apparaat.')),
+                        react_1.default.createElement("td", { "data-label": "Bron" }, model_1.sourceName[o.source] || o.source)))))))) : (react_1.default.createElement(ui_1.Empty, null, busy ? 'Metingen laden…' : 'Geen meetgegevens voor dit apparaat.')),
             cursor && (react_1.default.createElement("footer", { className: "panelfoot" },
                 react_1.default.createElement(Action, { kind: "secondary", disabled: busy, onClick: more }, "Oudere metingen laden")))),
         episodes.length > 0 && (react_1.default.createElement(ui_1.Section, { title: "Herstelde storingsperioden" }, episodes.map((ep) => (react_1.default.createElement("div", { className: "row-link static", key: ep.startObservationId + '-' + ep.endObservationId },
@@ -17880,6 +17896,7 @@ function DeviceDetail({ data, d, newIncident, save, }) {
                     ep.detectedAfterRecovery ? ' · Achteraf gereconstrueerd' : '')),
             react_1.default.createElement(ui_1.Badge, { value: "resolved" })))))),
         react_1.default.createElement(DeviceCoverage, { device: d }),
+        editChannel && save && react_1.default.createElement(moxa_channel_1.MoxaChannel, { key: d.id, device: d, save: save, close: () => setEditChannel(false) }),
         editAge && save && react_1.default.createElement(EditMaxAge, { device: d, save: save, close: () => setEditAge(false) })));
 }
 function DeviceCoverage({ device, metric = '', at = '' }) {
@@ -17924,15 +17941,15 @@ function Incidents({ data, site }) {
         (!status || (status === 'active' ? i.status !== 'resolved' : i.status === status)) &&
         (!sev || i.severity === sev) &&
         [i.id, i.title, i.site, i.deviceId].some((v) => v.toLowerCase().includes(q.trim().toLowerCase())))
-        .sort((a, b) => b.openedAt.localeCompare(a.openedAt));
+        .sort((a, b) => b.openedAt.localeCompare(a.openedAt) || a.id.localeCompare(b.id));
     return (react_1.default.createElement("section", { className: "panel" },
         react_1.default.createElement("div", { className: "filters" },
             react_1.default.createElement(Search, { value: q, onChange: setQ, placeholder: "Zoek een incident" }),
-            react_1.default.createElement("select", { "aria-label": "Incidentstatus", value: status, onChange: (e) => setStatus(e.target.value) },
+            react_1.default.createElement(ui_1.Select, { "aria-label": "Incidentstatus", value: status, onChange: (e) => setStatus(e.target.value) },
                 react_1.default.createElement("option", { value: "active" }, "Openstaand"),
                 react_1.default.createElement("option", { value: "" }, "Alle statussen"),
                 ['open', 'acknowledged', 'resolved'].map((s) => (react_1.default.createElement("option", { value: s, key: s }, (0, model_1.label)(s))))),
-            react_1.default.createElement("select", { "aria-label": "Ernst", value: sev, onChange: (e) => setSev(e.target.value) },
+            react_1.default.createElement(ui_1.Select, { "aria-label": "Ernst", value: sev, onChange: (e) => setSev(e.target.value) },
                 react_1.default.createElement("option", { value: "" }, "Elke ernst"),
                 ['critical', 'warning', 'info'].map((s) => (react_1.default.createElement("option", { value: s, key: s }, (0, model_1.label)(s)))))),
         react_1.default.createElement("div", { className: "tablewrap" },
@@ -17941,7 +17958,7 @@ function Incidents({ data, site }) {
                     react_1.default.createElement("tr", null,
                         react_1.default.createElement("th", null, "Incident"),
                         react_1.default.createElement("th", null, "Ernst"),
-                        react_1.default.createElement("th", null, "Laatst gemelde positie"),
+                        react_1.default.createElement("th", null, "Servicelocatie"),
                         react_1.default.createElement("th", null, "Status"),
                         react_1.default.createElement("th", null, "Geopend"))),
                 react_1.default.createElement("tbody", null, items.map((i) => (react_1.default.createElement("tr", { key: i.id },
@@ -17953,12 +17970,12 @@ function Incidents({ data, site }) {
                                     i.id,
                                     " \u00B7 ",
                                     i.deviceId)))),
-                    react_1.default.createElement("td", null,
+                    react_1.default.createElement("td", { "data-label": "Ernst" },
                         react_1.default.createElement(ui_1.Badge, { value: i.severity })),
-                    react_1.default.createElement("td", null, i.site),
-                    react_1.default.createElement("td", null,
+                    react_1.default.createElement("td", { "data-label": "Servicelocatie" }, i.site),
+                    react_1.default.createElement("td", { "data-label": "Status" },
                         react_1.default.createElement(ui_1.Badge, { value: i.status })),
-                    react_1.default.createElement("td", null, (0, model_1.when)(i.openedAt)))))))),
+                    react_1.default.createElement("td", { "data-label": "Geopend" }, (0, model_1.when)(i.openedAt)))))))),
         !items.length && react_1.default.createElement(ui_1.Empty, null, "Geen incidenten gevonden."),
         react_1.default.createElement("footer", { className: "panelfoot" },
             items.length,
@@ -18042,7 +18059,7 @@ function EntryForm({ kind, data, selected, site, save, close, }) {
     return (react_1.default.createElement("form", { className: "formstack", onSubmit: submit },
         kind === 'incident' ? (react_1.default.createElement(react_1.default.Fragment, null,
             react_1.default.createElement(ui_1.Field, { title: "Apparaat" },
-                react_1.default.createElement("select", { name: "deviceId", required: true, defaultValue: selected || '' },
+                react_1.default.createElement(ui_1.Select, { name: "deviceId", required: true, defaultValue: selected || '' },
                     react_1.default.createElement("option", { value: "", disabled: true }, "Kies een apparaat"),
                     data.devices
                         .filter((d) => !site || d.site === site || d.id === selected)
@@ -18051,31 +18068,150 @@ function EntryForm({ kind, data, selected, site, save, close, }) {
                         " \u00B7 ",
                         d.site))))),
             react_1.default.createElement(ui_1.Field, { title: "Incidentomschrijving" },
-                react_1.default.createElement("input", { required: true, maxLength: 160, name: "title", placeholder: "Beschrijf het probleem" })))) : (react_1.default.createElement(react_1.default.Fragment, null,
+                react_1.default.createElement(ui_1.WrappingInput, { required: true, maxLength: 160, name: "title", placeholder: "Beschrijf het probleem" })))) : (react_1.default.createElement(react_1.default.Fragment, null,
             react_1.default.createElement(ui_1.Field, { title: "Apparaatnaam" },
-                react_1.default.createElement("input", { name: "name", required: true, maxLength: 100 })),
+                react_1.default.createElement(ui_1.WrappingInput, { name: "name", required: true, maxLength: 100 })),
             react_1.default.createElement("div", { className: "pair" },
                 react_1.default.createElement(ui_1.Field, { title: "Categorie" },
-                    react_1.default.createElement("select", { name: "category" }, Object.entries(model_1.category).map(([key, name]) => (react_1.default.createElement("option", { value: key, key: key }, name))))),
+                    react_1.default.createElement(ui_1.Select, { name: "category" }, Object.entries(model_1.category).map(([key, name]) => (react_1.default.createElement("option", { value: key, key: key }, name))))),
                 react_1.default.createElement(ui_1.Field, { title: "Servicelocatie" },
-                    react_1.default.createElement("select", { required: true, name: "site", defaultValue: site || '' },
+                    react_1.default.createElement(ui_1.Select, { required: true, name: "site", defaultValue: site || '' },
                         react_1.default.createElement("option", { disabled: true, value: "" }, "Kies een servicelocatie"),
                         data.sites.map((s) => (react_1.default.createElement("option", { key: s.id, value: s.name }, s.name)))))),
             react_1.default.createElement("div", { className: "pair" },
                 react_1.default.createElement(ui_1.Field, { title: "Model" },
-                    react_1.default.createElement("input", { name: "model", required: true })),
+                    react_1.default.createElement(ui_1.WrappingInput, { name: "model", required: true })),
                 react_1.default.createElement(ui_1.Field, { title: "Serienummer" },
-                    react_1.default.createElement("input", { name: "serial", required: true }))),
+                    react_1.default.createElement(ui_1.WrappingInput, { name: "serial", required: true }))),
             react_1.default.createElement(ui_1.Field, { title: "Ge\u00EFnstalleerde versie (indien bekend)" },
-                react_1.default.createElement("input", { name: "version" })),
+                react_1.default.createElement(ui_1.WrappingInput, { name: "version" })),
             react_1.default.createElement(MaxAgeField, null),
             react_1.default.createElement("p", { className: "formnote" }, "Kies hoe lang een meting of locatie voor dit apparaat actueel blijft volgens de meetbron en serviceafspraak."),
             react_1.default.createElement(ui_1.Field, { title: "Bewakingsmethode" },
-                react_1.default.createElement("select", { name: "mode", defaultValue: "manual" }, Object.entries(model_1.modes).map(([key, name]) => (react_1.default.createElement("option", { value: key, key: key }, name))))))),
+                react_1.default.createElement(ui_1.Select, { name: "mode", defaultValue: "manual" }, Object.entries(model_1.modes).map(([key, name]) => (react_1.default.createElement("option", { value: key, key: key }, name))))))),
         err && (react_1.default.createElement("p", { className: "error", role: "alert" }, err)),
         react_1.default.createElement("div", { className: "formactions" },
             react_1.default.createElement(Action, { kind: "secondary", disabled: busy, onClick: close }, "Annuleren"),
             react_1.default.createElement("button", { className: "button primary", disabled: busy }, busy ? 'Opslaan…' : 'Opslaan'))));
+}
+
+},
+"./incident-feed": function(module, exports, require) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.useIncidentFeed = useIncidentFeed;
+const react_1 = require("react");
+const model_1 = require("./model");
+const pollIntervalMs = 2000;
+function useIncidentFeed(active, sessionScope, watchingRegister = false) {
+    const [data, setData] = (0, react_1.useState)(null);
+    const current = (0, react_1.useRef)(null);
+    const [newIds, setNewIds] = (0, react_1.useState)([]);
+    const [delayed, setDelayed] = (0, react_1.useState)(false);
+    const store = (0, react_1.useCallback)((next) => {
+        const previous = current.current;
+        current.current = next;
+        setData(next);
+        if (!next) {
+            setNewIds([]);
+            setDelayed(false);
+        }
+        else if (previous) {
+            const known = new Set(previous.incidents.map(incident => incident.id));
+            const fresh = next.incidents.filter(incident => incident.kind === 'signal' && !known.has(incident.id));
+            if (fresh.length) {
+                fresh.sort((a, b) => a.openedAt.localeCompare(b.openedAt) || a.id.localeCompare(b.id));
+                setNewIds(ids => [...new Set([...ids, ...fresh.map(incident => incident.id)])]);
+            }
+        }
+    }, []);
+    const storeSnapshot = (0, react_1.useCallback)((next, startedAt) => {
+        const previous = current.current;
+        if (next && ((sessionScope && sessionScope !== next.incidentScope) ||
+            (previous && previous.incidentScope !== next.incidentScope))) {
+            window.dispatchEvent(new Event('firecom-workspace-changed'));
+            return false;
+        }
+        // A slower 60-second snapshot must not roll back a delta received while its request was in flight.
+        if (next && previous?.incidentCursor !== undefined && next.incidentCursor !== undefined &&
+            previous.incidentCursor !== startedAt && next.incidentCursor < previous.incidentCursor) {
+            store({ ...next, incidents: previous.incidents, incidentCursor: previous.incidentCursor });
+        }
+        else {
+            store(next);
+        }
+        return true;
+    }, [store, sessionScope]);
+    (0, react_1.useEffect)(() => {
+        if (!active)
+            return;
+        let stopped = false;
+        let busy = false;
+        let timer;
+        const schedule = (delay) => {
+            window.clearTimeout(timer);
+            if (!stopped && document.visibilityState === 'visible')
+                timer = window.setTimeout(poll, delay);
+        };
+        async function poll() {
+            if (stopped || busy || document.visibilityState !== 'visible')
+                return;
+            const atStart = current.current;
+            const after = atStart?.incidentCursor;
+            if (after === undefined) {
+                schedule(pollIntervalMs);
+                return;
+            }
+            busy = true;
+            let delay = watchingRegister ? 450 : pollIntervalMs;
+            try {
+                const page = await (0, model_1.api)('/api/incidents/changes?after=' + after);
+                if (stopped || !current.current || current.current.incidentScope !== atStart?.incidentScope)
+                    return;
+                if (page.incidentScope !== current.current.incidentScope) {
+                    window.dispatchEvent(new Event('firecom-workspace-changed'));
+                    return;
+                }
+                if (!Number.isSafeInteger(page.cursor) || page.cursor < after || !Array.isArray(page.changes)) {
+                    throw new Error('Ongeldige incidentupdate.');
+                }
+                setDelayed(false);
+                const prior = current.current;
+                if (prior?.incidentCursor === after && page.changes.length) {
+                    const incidents = new Map(prior.incidents.map(incident => [incident.id, incident]));
+                    for (const { id, incident } of page.changes) {
+                        if (incident)
+                            incidents.set(id, incident);
+                        else
+                            incidents.delete(id);
+                    }
+                    store({ ...prior, incidentCursor: page.cursor, incidents: [...incidents.values()] });
+                }
+                if (page.more)
+                    delay = 0;
+                else if (watchingRegister && page.changes.length)
+                    delay = 250;
+            }
+            catch {
+                delay = pollIntervalMs;
+                if (!stopped && current.current)
+                    setDelayed(true);
+            }
+            finally {
+                busy = false;
+                schedule(delay);
+            }
+        }
+        const onVisibility = () => schedule(0);
+        document.addEventListener('visibilitychange', onVisibility);
+        schedule(0);
+        return () => {
+            stopped = true;
+            window.clearTimeout(timer);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+    }, [active, store, sessionScope, watchingRegister]);
+    return { data, current, storeSnapshot, newIds, delayed, dismiss: (ids) => setNewIds(values => values.filter(id => !ids.has(id))) };
 }
 
 },
@@ -18122,6 +18258,8 @@ const model_1 = require("./model");
 const pages_connection_1 = require("./pages-connection");
 const ui_1 = require("./ui");
 const overview_1 = require("./overview");
+const opening_board_1 = require("./opening-board");
+const incident_feed_1 = require("./incident-feed");
 const fleet_1 = require("./fleet");
 const service_1 = require("./service");
 const compatibility_1 = require("./compatibility");
@@ -18188,13 +18326,11 @@ function readRoute() {
     return { page: page || 'overzicht', id };
 }
 function Brand() {
-    return (react_1.default.createElement("div", { className: "brand" },
-        react_1.default.createElement("span", { className: "brandmark" },
-            react_1.default.createElement(ui_1.Icon, { name: "antenna", size: 23 })),
-        react_1.default.createElement("span", null,
-            "Service",
-            react_1.default.createElement("span", { className: "brandlight" }, "monitor"),
-            react_1.default.createElement("small", null, "FIRECOM WERKRUIMTE"))));
+    return (react_1.default.createElement("span", { className: "servicebrand" },
+        react_1.default.createElement("span", { className: "firecom-word" },
+            react_1.default.createElement("span", { className: "radio-mark", "aria-hidden": "true" }),
+            "Firecom"),
+        react_1.default.createElement("span", { className: "service-name" }, "Servicemonitor")));
 }
 function Login({ onLogin }) {
     const [err, setErr] = (0, react_1.useState)(''), [busy, setBusy] = (0, react_1.useState)(false);
@@ -18225,30 +18361,28 @@ function Login({ onLogin }) {
                 react_1.default.createElement("button", { className: "button primary", disabled: busy }, "Aanmelden")))));
 }
 const privateViews = {
-    apparaten: ['Apparatenregister', 'Verbind je werkruimte om geregistreerde apparaten, metingen en door apparaten gemelde posities te bekijken.'],
-    incidenten: ['Incidentenregister', 'Verbind je werkruimte om openstaande incidenten, hun prioriteit en de afhandeling te bekijken.'],
-    onderhoud: ['Onderhoudsplanning', 'Verbind je werkruimte om geplande bezoeken, apparaatcontroles en servicerapporten te bekijken.'],
-    reparaties: ['Reparatiedossiers', 'Verbind je werkruimte om reparaties, de werkplaatsstatus en eventuele leentoestellen te bekijken.'],
-    locaties: ['Servicelocaties en contractdekking', 'Verbind je werkruimte om klantlocaties, servicecontracten en de bijbehorende apparatuur te bekijken.'],
+    apparaten: ['Apparatenregister', 'Verbind je werkruimte voor je apparaten, hun laatste metingen en gemelde posities.'],
+    incidenten: ['Incidentenregister', 'Verbind je werkruimte om meldingen te beoordelen en incidenten in behandeling te nemen.'],
+    onderhoud: ['Onderhoudsplanning', 'Verbind je werkruimte voor geplande bezoeken, apparaatcontroles en servicerapporten.'],
+    reparaties: ['Reparatiedossiers', 'Verbind je werkruimte voor reparaties, de werkplaatsstatus en beschikbare leentoestellen.'],
+    locaties: ['Servicelocaties en contractdekking', 'Verbind je werkruimte voor klantlocaties, gekoppelde apparaten en serviceafspraken.'],
 };
-function PublicView({ page, id, connect }) {
+function PublicView({ page, id, gate, connect }) {
     if (page === 'overzicht' && !id)
-        return (react_1.default.createElement(overview_1.SetupOverview, { title: "Volg de apparatuur van je klanten", description: "Verbind je werkruimte om binnenkomende signalen, incidenten en onderhoud te volgen. De compatibiliteitscatalogus kun je direct bekijken.", action: connect }));
+        return (react_1.default.createElement(overview_1.SetupOverview, { title: "Volg de apparatuur van je klanten", description: "Verbind je werkruimte voor actuele metingen, incidenten en onderhoud. De compatibiliteitscatalogus is direct beschikbaar.", action: connect }));
     if (page === 'compatibiliteit' && !id)
         return react_1.default.createElement(compatibility_1.Compatibility, { publicCatalog: true });
-    const view = Object.hasOwn(privateViews, page) ? privateViews[page] : undefined;
-    if (view && (!id || ['apparaten', 'incidenten', 'onderhoud', 'locaties'].includes(page)))
-        return (react_1.default.createElement(ui_1.Section, { title: view[0] },
-            react_1.default.createElement("div", { className: "workspace-access" },
-                react_1.default.createElement("p", null, view[1]),
-                connect)));
+    if (gate)
+        return react_1.default.createElement(overview_1.WorkspaceLinks, { current: page });
     return react_1.default.createElement(ui_1.Empty, null,
         "Deze pagina is niet beschikbaar. ",
         react_1.default.createElement("a", { href: (0, overview_1.href)('overzicht') }, "Naar overzicht"));
 }
 function App({ publicPages, endPages }) {
-    const [route, setRoute] = (0, react_1.useState)(readRoute), [session, setSession] = (0, react_1.useState)(null), [data, setData] = (0, react_1.useState)(null), [site, setSite] = (0, react_1.useState)(''), [notice, setNotice] = (0, react_1.useState)(''), [error, setError] = (0, react_1.useState)(''), [loading, setLoading] = (0, react_1.useState)(false), [unavailable, setUnavailable] = (0, react_1.useState)(false), [loadedAt, setLoadedAt] = (0, react_1.useState)(''), [menu, setMenu] = (0, react_1.useState)(false), [entry, setEntry] = (0, react_1.useState)(null), [selected, setSelected] = (0, react_1.useState)('');
+    const [route, setRoute] = (0, react_1.useState)(readRoute), [session, setSession] = (0, react_1.useState)(null), [site, setSite] = (0, react_1.useState)(''), [notice, setNotice] = (0, react_1.useState)(''), [error, setError] = (0, react_1.useState)(''), [loading, setLoading] = (0, react_1.useState)(false), [unavailable, setUnavailable] = (0, react_1.useState)(false), [loadedAt, setLoadedAt] = (0, react_1.useState)(''), [menu, setMenu] = (0, react_1.useState)(false), [entry, setEntry] = (0, react_1.useState)(null), [selected, setSelected] = (0, react_1.useState)('');
+    const { data, current, storeSnapshot, newIds, delayed, dismiss } = (0, incident_feed_1.useIncidentFeed)(!!session?.authenticated && !publicPages, session?.incidentScope, route.page === 'incidenten' && !route.id);
     const generation = (0, react_1.useRef)(0);
+    const failedReads = (0, react_1.useRef)(0);
     const browsing = !!publicPages;
     const checkSession = (0, react_1.useCallback)(async () => {
         const s = await (0, model_1.api)('/api/session');
@@ -18264,6 +18398,7 @@ function App({ publicPages, endPages }) {
     }, [endPages]);
     const refresh = (0, react_1.useCallback)(async () => {
         const id = ++generation.current;
+        const cursorAtStart = current.current?.incidentCursor;
         setLoading(true);
         try {
             const d = await (0, model_1.api)('/api/dashboard');
@@ -18271,8 +18406,10 @@ function App({ publicPages, endPages }) {
                 throw new Error('Het overzicht is onvolledig ontvangen.');
             }
             if (id === generation.current) {
+                failedReads.current = 0;
                 setUnavailable(false);
-                setData(d);
+                if (!storeSnapshot(d, cursorAtStart))
+                    return;
                 setSite((previous) => (previous && !d.sites.some((s) => s.name === previous) ? '' : previous));
                 setLoadedAt(new Date().toISOString());
                 setError('');
@@ -18280,8 +18417,9 @@ function App({ publicPages, endPages }) {
         }
         catch (e) {
             if (id === generation.current) {
+                failedReads.current++;
                 setUnavailable(true);
-                setData(null);
+                storeSnapshot(null);
                 setSite('');
                 setLoadedAt('');
                 setEntry(null);
@@ -18295,7 +18433,7 @@ function App({ publicPages, endPages }) {
             if (id === generation.current)
                 setLoading(false);
         }
-    }, []);
+    }, [current, storeSnapshot]);
     const init = (0, react_1.useCallback)(async () => {
         setError('');
         try {
@@ -18308,6 +18446,8 @@ function App({ publicPages, endPages }) {
     (0, react_1.useEffect)(() => {
         if (!browsing)
             void init();
+    }, [init, browsing]);
+    (0, react_1.useEffect)(() => {
         const routeChange = () => {
             setRoute(readRoute());
             setMenu(false);
@@ -18326,17 +18466,26 @@ function App({ publicPages, endPages }) {
             setSite('');
             setMenu(false);
             setNotice('');
-            setData(null);
+            storeSnapshot(null);
             setEntry(null);
             setError('');
         };
+        const workspaceChanged = () => {
+            expired();
+            if (!endPages) {
+                setSession(null);
+                void init();
+            }
+        };
+        window.addEventListener('firecom-workspace-changed', workspaceChanged);
         window.addEventListener('hashchange', routeChange);
         window.addEventListener('session-expired', expired);
         return () => {
+            window.removeEventListener('firecom-workspace-changed', workspaceChanged);
             window.removeEventListener('hashchange', routeChange);
             window.removeEventListener('session-expired', expired);
         };
-    }, [init, endPages, browsing]);
+    }, [init, endPages, browsing, storeSnapshot]);
     (0, react_1.useEffect)(() => {
         if (!session?.authenticated)
             return;
@@ -18352,6 +18501,16 @@ function App({ publicPages, endPages }) {
             document.removeEventListener('visibilitychange', updateVisible);
         };
     }, [session, refresh]);
+    (0, react_1.useEffect)(() => {
+        if (!session?.authenticated || !unavailable || loading)
+            return;
+        const retryDelay = Math.min(30000, 2000 * 2 ** (Math.min(failedReads.current, 5) - 1));
+        const timer = window.setTimeout(() => {
+            if (document.visibilityState === 'visible')
+                void refresh().catch(() => { });
+        }, retryDelay);
+        return () => window.clearTimeout(timer);
+    }, [session, unavailable, loading, refresh]);
     (0, react_1.useEffect)(() => {
         if (!notice)
             return;
@@ -18386,7 +18545,7 @@ function App({ publicPages, endPages }) {
         try {
             await (0, model_1.api)('/api/logout', 'POST', {});
             generation.current++;
-            setData(null);
+            storeSnapshot(null);
             setEntry(null);
             setSite('');
             await checkSession();
@@ -18423,70 +18582,100 @@ function App({ publicPages, endPages }) {
         !unavailable &&
         canWrite &&
         (page === 'apparaten' && !id ? (react_1.default.createElement(fleet_1.Action, { icon: "plus", onClick: () => add(data?.sites.length ? 'device' : 'site') }, data?.sites.length ? 'Apparaat toevoegen' : 'Servicelocatie toevoegen')) : page === 'locaties' && !id ? (react_1.default.createElement(fleet_1.Action, { icon: "plus", onClick: () => add('site') }, "Servicelocatie toevoegen")) : page === 'incidenten' && !id && data?.devices.some((d) => !site || d.site === site) ? (react_1.default.createElement(fleet_1.Action, { icon: "plus", onClick: () => add('incident') }, "Incident melden")) : null);
+    const newAlerts = new Map(newIds.map((id, index) => [id, index]));
+    const incoming = data?.incidents.filter(incident => newAlerts.has(incident.id) && (!site || incident.site === site))
+        .sort((a, b) => newAlerts.get(a.id) - newAlerts.get(b.id)) || [];
+    const register = page === 'incidenten' && !id;
+    const banner = register ? [] : incoming.slice(-50).reverse();
     const filterable = !unavailable && !!data?.sites.length && !id && page !== 'compatibiliteit' && !!navItem;
     const connectButton = publicPages && (react_1.default.createElement(fleet_1.Action, { icon: "plug", disabled: publicPages.waiting, onClick: publicPages.connect }, publicPages.waiting ? 'Verbinding in behandeling' : 'Verbinden met werkruimte'));
-    const mobileNav = nav.map((n) => (react_1.default.createElement("a", { "aria-current": page === n.id ? 'page' : undefined, key: n.id, className: 'navlink ' + (page === n.id ? 'active' : ''), href: (0, overview_1.href)(n.id), onClick: () => setMenu(false) },
+    const gate = publicPages && Object.hasOwn(privateViews, page) &&
+        (!id || ['apparaten', 'incidenten', 'onderhoud', 'locaties'].includes(page)) ? privateViews[page] : null;
+    const publicLanding = !!gate || (!!publicPages && page === 'overzicht' && !id);
+    const navigationLink = (n) => (react_1.default.createElement("a", { "aria-current": page === n.id ? 'page' : undefined, key: n.id, className: 'navlink ' + (page === n.id ? 'active' : ''), href: (0, overview_1.href)(n.id), onClick: () => setMenu(false) },
         react_1.default.createElement(ui_1.Icon, { name: n.icon, size: 18 }),
         react_1.default.createElement("span", null, n.title),
-        n.id === 'incidenten' && !unavailable && data && (0, overview_1.activeIncidents)(data.incidents).length > 0 && (react_1.default.createElement("small", null, (0, overview_1.activeIncidents)(data.incidents).length)))));
-    return (react_1.default.createElement("div", { className: "app" },
+        n.id === 'incidenten' && !unavailable && data && (0, overview_1.activeIncidents)(data.incidents).length > 0 && (react_1.default.createElement("small", null, (0, overview_1.activeIncidents)(data.incidents).length))));
+    return (react_1.default.createElement("div", { className: 'app' + (publicLanding ? ' public-landing' : '') },
         react_1.default.createElement("a", { className: "skip", href: "#maincontent", onClick: (e) => {
                 e.preventDefault();
                 document.getElementById('maincontent')?.focus();
             } }, "Naar inhoud"),
-        react_1.default.createElement("aside", { className: "sidebar" },
-            react_1.default.createElement("a", { href: (0, overview_1.href)('overzicht'), "aria-label": "Servicemonitor overzicht" },
-                react_1.default.createElement(Brand, null)),
-            react_1.default.createElement("nav", { "aria-label": "Hoofdnavigatie" }, ['Werkruimte', 'Beheer'].map((group) => (react_1.default.createElement("div", { className: "navgroup", key: group },
-                react_1.default.createElement("p", null, group),
-                mobileNav.filter((_, i) => nav[i].group === group))))),
-            react_1.default.createElement("div", { className: "sidebottom" },
-                react_1.default.createElement("div", { className: "avatar" }, session?.authenticated ? user.slice(0, 2).toLocaleUpperCase('nl') : react_1.default.createElement(ui_1.Icon, { name: "plug", size: 17 })),
-                react_1.default.createElement("div", null,
-                    react_1.default.createElement("strong", null, session?.authenticated ? user : 'Werkruimte'),
-                    session?.authenticated
-                        ? user !== roleLabel && react_1.default.createElement("small", null, roleLabel)
-                        : react_1.default.createElement("small", null, publicPages && !publicPages.waiting ? 'Niet verbonden' : 'Verbinding controleren…')),
-                endPages && (react_1.default.createElement("button", { title: "Verbinding verbreken", "aria-label": "Verbinding verbreken", className: "sidex", onClick: () => endPages() },
-                    react_1.default.createElement(ui_1.Icon, { name: "exit", size: 17 }))),
-                session?.mode === 'local' && (react_1.default.createElement("button", { title: "Afmelden", "aria-label": "Afmelden", className: "sidex", onClick: logout },
-                    react_1.default.createElement(ui_1.Icon, { name: "exit", size: 17 }))))),
+        react_1.default.createElement("header", { className: "masthead" },
+            react_1.default.createElement("div", { className: "mastline" },
+                react_1.default.createElement("a", { className: "homebrand", href: (0, overview_1.href)('overzicht'), "aria-label": "Servicemonitor overzicht" },
+                    react_1.default.createElement(Brand, null)),
+                react_1.default.createElement("div", { className: "masttools" },
+                    react_1.default.createElement("span", { className: "sessionlabel" },
+                        react_1.default.createElement(ui_1.Icon, { name: session?.authenticated ? 'user' : 'plug', size: 17 }),
+                        react_1.default.createElement("span", null, session?.authenticated
+                            ? react_1.default.createElement(react_1.default.Fragment, null,
+                                user,
+                                user !== roleLabel && react_1.default.createElement("small", null, roleLabel))
+                            : publicPages?.waiting ? 'Verbinding controleren…' : 'Niet verbonden')),
+                    endPages && react_1.default.createElement("button", { className: "iconbtn mastbtn", title: "Verbinding verbreken", "aria-label": "Verbinding verbreken", onClick: () => endPages() },
+                        react_1.default.createElement(ui_1.Icon, { name: "exit", size: 18 })),
+                    session?.mode === 'local' && react_1.default.createElement("button", { className: "iconbtn mastbtn", title: "Afmelden", "aria-label": "Afmelden", onClick: logout },
+                        react_1.default.createElement(ui_1.Icon, { name: "exit", size: 18 })),
+                    react_1.default.createElement("button", { className: "iconbtn mobiletoggle mastbtn", "aria-label": "Navigatie openen", "aria-haspopup": "dialog", "aria-expanded": menu, onClick: () => setMenu(true) },
+                        react_1.default.createElement(ui_1.Icon, { name: "menu", size: 22 })))),
+            react_1.default.createElement("div", { className: "navband" },
+                react_1.default.createElement("nav", { className: "mainnav", "aria-label": "Hoofdnavigatie" }, nav.map(navigationLink)))),
         react_1.default.createElement("div", { className: "workspace" },
-            react_1.default.createElement("header", { className: "topbar" },
-                react_1.default.createElement("button", { className: "iconbtn mobiletoggle", "aria-label": "Navigatie openen", "aria-haspopup": "dialog", "aria-expanded": menu, onClick: () => setMenu(true) },
-                    react_1.default.createElement(ui_1.Icon, { name: "menu" })),
+            register && !unavailable && incoming.length > 0 && react_1.default.createElement(opening_board_1.OpeningBoard, { key: JSON.stringify([data?.incidentScope, site]), openings: incoming, dismiss: () => dismiss(new Set(incoming.map(i => i.id))) }),
+            react_1.default.createElement("div", { className: "viewbar" },
                 react_1.default.createElement("div", { className: "crumb" },
-                    react_1.default.createElement("span", null, "Werkruimte"),
+                    react_1.default.createElement("a", { href: (0, overview_1.href)('overzicht') }, "Werkruimte"),
                     react_1.default.createElement(ui_1.Icon, { name: "chevron", size: 13 }),
                     react_1.default.createElement("strong", null, navItem?.title || 'Onbekend')),
                 react_1.default.createElement("div", { className: "topright" },
                     react_1.default.createElement("span", { className: "topdate" }, new Intl.DateTimeFormat('nl-NL', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                        timeZone: 'Europe/Amsterdam',
+                        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Amsterdam',
                     }).format(new Date())),
                     session?.authenticated && react_1.default.createElement("button", { className: 'iconbtn refresh ' + (loading ? 'spinning' : ''), disabled: loading, title: "Gegevens vernieuwen", "aria-label": "Gegevens vernieuwen", onClick: () => refresh().catch(() => { }) },
                         react_1.default.createElement(ui_1.Icon, { name: "refresh", size: 17 })))),
+            (banner.length > 0 || delayed) && data && (react_1.default.createElement("aside", { className: "liveincidents", "aria-label": "Actuele incidentmeldingen" },
+                delayed && react_1.default.createElement("p", { role: "status" }, "Live-incidentupdates vertraagd. Verbinding wordt opnieuw geprobeerd."),
+                banner.length > 0 && (react_1.default.createElement(react_1.default.Fragment, null,
+                    react_1.default.createElement("div", { role: "status" },
+                        react_1.default.createElement("strong", null, "Nieuw incident"),
+                        ' ',
+                        react_1.default.createElement("a", { href: (0, overview_1.href)('incidenten', banner[0].id) }, banner[0].title),
+                        banner[0].status === 'resolved' && ' · Hersteld',
+                        banner.length > 1 && react_1.default.createElement("details", null,
+                            react_1.default.createElement("summary", null,
+                                "Overige recente incidenten (",
+                                banner.length - 1,
+                                ")"),
+                            react_1.default.createElement("ul", null, banner.slice(1).map(incident => (react_1.default.createElement("li", { key: incident.id },
+                                react_1.default.createElement("a", { href: (0, overview_1.href)('incidenten', incident.id) }, incident.title),
+                                incident.status === 'resolved' && ' · Hersteld')))))),
+                    react_1.default.createElement("button", { className: "iconbtn", "aria-label": "Incidentmeldingen sluiten", onClick: () => dismiss(new Set(incoming.map(incident => incident.id))) },
+                        react_1.default.createElement(ui_1.Icon, { name: "close", size: 16 })))))),
             react_1.default.createElement("main", { id: "maincontent", tabIndex: -1 },
                 id && navItem && (react_1.default.createElement("a", { className: "back", href: (0, overview_1.href)(page) },
                     react_1.default.createElement(ui_1.Icon, { name: "back", size: 15 }),
                     " Terug naar ",
                     navItem.title.toLowerCase())),
-                react_1.default.createElement("header", { className: "pagehead" },
+                react_1.default.createElement("header", { className: 'pagehead' + (gate ? ' accesshero' : '') },
                     react_1.default.createElement("div", null,
                         react_1.default.createElement("h1", null, title),
                         react_1.default.createElement("p", null, detail ? id : navItem?.subtitle)),
-                    react_1.default.createElement("div", { className: "headtools" },
+                    gate ? react_1.default.createElement("section", { className: "workspace-access", "aria-labelledby": "workspace-access-title" },
+                        react_1.default.createElement("div", { className: "gate-icon" },
+                            react_1.default.createElement(ui_1.Icon, { name: navItem?.icon || 'plug', size: 23 })),
+                        react_1.default.createElement("h2", { id: "workspace-access-title" }, gate[0]),
+                        react_1.default.createElement("p", null, gate[1]),
+                        connectButton) : react_1.default.createElement("div", { className: "headtools" },
                         filterable && (react_1.default.createElement("label", { className: "locationselect" },
                             react_1.default.createElement(ui_1.Icon, { name: "pin", size: 16 }),
-                            react_1.default.createElement("select", { "aria-label": "Filter op administratieve servicelocatie", value: site, onChange: (e) => setSite(e.target.value) },
+                            react_1.default.createElement(ui_1.Select, { "aria-label": "Filter op administratieve servicelocatie", value: site, onChange: (e) => setSite(e.target.value) },
                                 react_1.default.createElement("option", { value: "" }, "Alle servicelocaties"),
                                 data?.sites.map((s) => (react_1.default.createElement("option", { value: s.name, key: s.id }, s.name)))))),
                         action,
                         publicPages && page === 'compatibiliteit' && !id && connectButton)),
                 publicPages?.status,
-                publicPages && react_1.default.createElement(PublicView, { page: page, id: id, connect: connectButton }),
+                publicPages && react_1.default.createElement(PublicView, { page: page, id: id, gate: !!gate, connect: connectButton }),
                 error && (react_1.default.createElement("p", { className: "error", role: "alert" },
                     unavailable && react_1.default.createElement("strong", null, "Actuele gegevens niet beschikbaar. "),
                     error,
@@ -18510,7 +18699,9 @@ function App({ publicPages, endPages }) {
                     ' ',
                     "\u00B7 Amsterdam")))),
         menu && (react_1.default.createElement(ui_1.Modal, { title: "Navigatie", onClose: () => setMenu(false) },
-            react_1.default.createElement("nav", { className: "mobilenav", "aria-label": "Mobiele navigatie" }, mobileNav),
+            react_1.default.createElement("nav", { className: "mobilenav", "aria-label": "Mobiele navigatie" }, ['Werkruimte', 'Beheer'].map(group => (react_1.default.createElement("div", { key: group },
+                react_1.default.createElement("p", { className: "navgroup-title" }, group),
+                nav.filter(item => item.group === group).map(navigationLink))))),
             endPages && (react_1.default.createElement(fleet_1.Action, { kind: "secondary", icon: "exit", onClick: () => endPages() }, "Verbinding verbreken")),
             session?.mode === 'local' && (react_1.default.createElement(fleet_1.Action, { kind: "secondary", icon: "exit", onClick: logout }, "Afmelden")))),
         entry && data && (react_1.default.createElement(ui_1.Modal, { title: entry === 'site'
@@ -18800,6 +18991,250 @@ exports.sourceName = {
 };
 
 },
+"./moxa-channel": function(module, exports, require) {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MoxaChannel = MoxaChannel;
+const react_1 = __importStar(require("react"));
+const model_1 = require("./model");
+const ui_1 = require("./ui");
+function MoxaChannel({ device, save, close }) {
+    const [gateway, setGateway] = (0, react_1.useState)('');
+    const [channel, setChannel] = (0, react_1.useState)('0');
+    const [review, setReview] = (0, react_1.useState)(null);
+    const [error, setError] = (0, react_1.useState)('');
+    const [busy, setBusy] = (0, react_1.useState)(false);
+    const endpoint = '/api/devices/' + encodeURIComponent(device.id) + '/moxa-channel';
+    async function submit(event) {
+        event.preventDefault();
+        if (busy)
+            return;
+        setBusy(true);
+        setError('');
+        try {
+            if (!review) {
+                const query = new URLSearchParams({ gatewayId: gateway, channel });
+                setReview(await (0, model_1.api)(endpoint + '?' + query));
+            }
+            else {
+                await save(endpoint, { gatewayId: gateway, channel: Number(channel),
+                    expectedDeviceId: review.current?.deviceId ?? null,
+                    expectedFrom: review.current?.validFrom ?? null }, 'Moxa-ingang toegewezen.');
+                close();
+            }
+        }
+        catch (problem) {
+            setReview(null);
+            setError(problem.message);
+        }
+        finally {
+            setBusy(false);
+        }
+    }
+    return react_1.default.createElement(ui_1.Modal, { title: "Moxa-ingang toewijzen", onClose: () => { if (!busy)
+            close(); } },
+        react_1.default.createElement("form", { onSubmit: submit, className: "formstack" },
+            react_1.default.createElement("p", null,
+                "Controleer op locatie de aansluiting van ",
+                react_1.default.createElement("strong", null,
+                    device.name,
+                    " \u00B7 ",
+                    device.serial),
+                " in ",
+                device.site,
+                ". De nieuwe toewijzing begint zodra u bevestigt."),
+            react_1.default.createElement(ui_1.Field, { title: "Gateway-ID uit het collectorprofiel" },
+                react_1.default.createElement("input", { required: true, maxLength: 100, pattern: "[A-Za-z0-9_.:\\-]+", value: gateway, disabled: busy, onChange: e => { setGateway(e.target.value); setReview(null); } })),
+            react_1.default.createElement(ui_1.Field, { title: "Digitale ingang (0\u201315)" },
+                react_1.default.createElement("input", { type: "number", min: 0, max: 15, step: 1, required: true, value: channel, disabled: busy, onChange: e => { setChannel(e.target.value); setReview(null); } })),
+            review && react_1.default.createElement("p", { role: "status" }, review.current?.deviceId ? 'Huidig apparaat: ' + review.current.name + ' · ' + review.current.serial + ' (sinds ' + (0, model_1.when)(review.current.validFrom) + ').' :
+                review.current ? 'De oude kanaalhistorie bevat meerdere apparaten. Controleer de fysieke aansluiting.' : 'Er is nog geen toewijzing voor deze ingang.'),
+            error && react_1.default.createElement("p", { role: "alert", className: "error" }, error),
+            react_1.default.createElement("div", { className: "formactions" },
+                react_1.default.createElement("button", { type: "button", className: "button secondary", disabled: busy, onClick: close }, "Annuleren"),
+                react_1.default.createElement("button", { className: "button primary", disabled: busy || review?.current?.deviceId === device.id }, !review ? 'Toewijzing controleren' : review.current?.deviceId === device.id ? 'Al toegewezen' : 'Ingang nu toewijzen'))));
+}
+
+},
+"./opening-board": function(module, exports, require) {
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.OpeningBoard = OpeningBoard;
+const react_1 = __importStar(require("react"));
+const model_1 = require("./model");
+const overview_1 = require("./overview");
+const timeOfDay = new Intl.DateTimeFormat('nl-NL', { timeZone: 'Europe/Amsterdam', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const minDwellMs = 1800;
+const columnsFor = (width) => Math.max(1, Math.floor(width / 520));
+function OpeningBoard({ openings, dismiss }) {
+    const board = (0, react_1.useRef)(null);
+    const started = (0, react_1.useRef)(0);
+    const [capacity, setCapacity] = (0, react_1.useState)(1);
+    const [columns, setColumns] = (0, react_1.useState)(1);
+    const [first, setFirst] = (0, react_1.useState)(0);
+    const [paused, setPaused] = (0, react_1.useState)(false);
+    const [hasFocus, setHasFocus] = (0, react_1.useState)(false);
+    const [inView, setInView] = (0, react_1.useState)(true);
+    const header = (0, react_1.useRef)(null);
+    (0, react_1.useLayoutEffect)(() => {
+        const node = board.current;
+        if (!node || !openings.length)
+            return;
+        let measuredWidth = 0;
+        let tallest = 42;
+        function measure() {
+            const nextColumns = columnsFor(node.clientWidth - 28);
+            const room = window.innerHeight - (header.current?.getBoundingClientRect().bottom ?? 140) - 20;
+            // Allow extra lines for full identifiers on narrow screens or at high text zoom.
+            if (measuredWidth !== node.clientWidth) {
+                measuredWidth = node.clientWidth;
+                tallest = 42;
+            }
+            for (const row of node.querySelectorAll('tbody tr'))
+                tallest = Math.max(tallest, row.getBoundingClientRect().height);
+            setColumns(nextColumns);
+            setCapacity(nextColumns * Math.max(1, Math.floor(room / tallest)));
+        }
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(node);
+        if (header.current)
+            observer.observe(header.current);
+        const visibility = typeof IntersectionObserver === 'undefined' ? null :
+            new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
+        if (header.current)
+            visibility?.observe(header.current);
+        window.addEventListener('resize', measure);
+        return () => { visibility?.disconnect(); observer.disconnect(); window.removeEventListener('resize', measure); };
+    }, [!!openings.length]);
+    const index = Math.min(first, Math.max(0, openings.length - 1));
+    const full = openings.length >= index + capacity;
+    const waiting = openings.length > index + capacity;
+    (0, react_1.useEffect)(() => { if (full)
+        started.current = performance.now(); }, [full, index, capacity]);
+    (0, react_1.useEffect)(() => {
+        if (!waiting || paused || hasFocus || !inView)
+            return;
+        let timer;
+        function schedule() {
+            window.clearTimeout(timer);
+            if (document.visibilityState === 'visible') {
+                timer = window.setTimeout(() => setFirst(index + capacity), Math.max(0, minDwellMs - (performance.now() - started.current)));
+            }
+            else
+                started.current = performance.now();
+        }
+        schedule();
+        const onVisibility = () => { started.current = performance.now(); schedule(); };
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => { window.clearTimeout(timer); document.removeEventListener('visibilitychange', onVisibility); };
+    }, [waiting, paused, hasFocus, inView, index, capacity]);
+    if (!openings.length)
+        return null;
+    const page = openings.slice(index, index + capacity);
+    return react_1.default.createElement("section", { className: "openingboard", "aria-label": "Binnengekomen incidenten", ref: board },
+        react_1.default.createElement("div", { className: "openinghead", ref: header },
+            react_1.default.createElement("h2", null, "Binnengekomen incidenten"),
+            react_1.default.createElement("span", null,
+                index + 1,
+                "\u2013",
+                index + page.length,
+                " van ",
+                openings.length),
+            react_1.default.createElement("div", null,
+                react_1.default.createElement("button", { type: "button", disabled: !index, onClick: () => { setPaused(true); setFirst(Math.max(0, index - capacity)); } }, "Vorige"),
+                react_1.default.createElement("button", { type: "button", "aria-pressed": paused, onClick: () => setPaused(!paused) }, paused ? 'Hervatten' : 'Pauzeren'),
+                react_1.default.createElement("button", { type: "button", disabled: !waiting, onClick: () => { setPaused(true); setFirst(index + capacity); } }, "Volgende"),
+                react_1.default.createElement("button", { type: "button", onClick: dismiss }, "Meldingen sluiten"))),
+        react_1.default.createElement("table", { className: "incidenttable openinggrid", "aria-label": "Openingsmeldingen en hun actuele status" },
+            react_1.default.createElement("thead", { className: "openingcolumns" },
+                react_1.default.createElement("tr", null,
+                    react_1.default.createElement("th", null, "Melding bij opening"),
+                    react_1.default.createElement("th", null, "Ernst"),
+                    react_1.default.createElement("th", null, "Geopend om"),
+                    react_1.default.createElement("th", null, "Huidige status"))),
+            react_1.default.createElement("tbody", { style: { gridTemplateColumns: 'repeat(' + columns + ', minmax(0, 1fr))' }, onFocus: () => setHasFocus(true), onBlur: e => { if (!e.currentTarget.contains(e.relatedTarget))
+                    setHasFocus(false); } }, page.map(i => react_1.default.createElement("tr", { key: i.id, "data-opening": i.openingObservationId },
+                react_1.default.createElement("td", { className: "openingidentity" },
+                    react_1.default.createElement("a", { href: (0, overview_1.href)('incidenten', i.id) },
+                        react_1.default.createElement("strong", null, i.title),
+                        react_1.default.createElement("small", null,
+                            i.id,
+                            " \u00B7 ",
+                            i.deviceId))),
+                react_1.default.createElement("td", { className: "openingseverity" }, (0, model_1.label)(i.severity)),
+                react_1.default.createElement("td", { className: "openingtime" },
+                    react_1.default.createElement("time", { dateTime: i.openedAt, title: 'Geopend op ' + i.openedAt }, Number.isFinite(Date.parse(i.openedAt)) ? timeOfDay.format(new Date(i.openedAt)) : 'Tijd onbekend')),
+                react_1.default.createElement("td", { className: 'openingstate state-' + i.status }, (0, model_1.label)(i.status)))))));
+}
+
+},
 "./overview": function(module, exports, require) {
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -18810,6 +19245,7 @@ exports.activeIncidents = exports.href = void 0;
 exports.LinkMore = LinkMore;
 exports.IncidentRows = IncidentRows;
 exports.SetupOverview = SetupOverview;
+exports.WorkspaceLinks = WorkspaceLinks;
 exports.Overview = Overview;
 const react_1 = __importDefault(require("react"));
 const model_1 = require("./model");
@@ -18904,27 +19340,43 @@ function SetupOverview({ title, description, action, }) {
                     react_1.default.createElement("span", { className: "sigicon current" },
                         react_1.default.createElement(ui_1.Icon, { name: "grid", size: 26 })),
                     react_1.default.createElement("b", null, "Werkruimte")))),
-        react_1.default.createElement("div", { className: "setupresources" }, [
-            [
-                'devices',
-                'Apparatenregister',
-                'Bekijk geregistreerde apparaten en hun laatst gemelde positie.',
-                'apparaten',
-            ],
-            ['pin', 'Locaties & contracten', 'Beheer de klantrelatie en leg serviceafspraken vast.', 'locaties'],
-            [
-                'layers',
-                'Compatibiliteit',
-                'Bekijk per model welke versies nog een praktijktest vereisen.',
-                'compatibiliteit',
-            ],
-        ].map(([icon, title, description, page]) => (react_1.default.createElement("a", { className: "resourcecard", href: (0, exports.href)(page), key: page },
-            react_1.default.createElement("span", { className: "resourcehead" },
-                react_1.default.createElement("span", { className: "resourceicon" },
-                    react_1.default.createElement(ui_1.Icon, { name: icon })),
-                react_1.default.createElement(ui_1.Icon, { name: "arrow", size: 16 })),
-            react_1.default.createElement("strong", null, title),
-            react_1.default.createElement("span", null, description)))))));
+        react_1.default.createElement(WorkspaceLinks, null)));
+}
+const workspaceLinks = [
+    { page: 'apparaten', title: 'Apparatenregister', copy: 'Bekijk de status, meetgeschiedenis en gemelde positie van een apparaat.', image: 'fleet' },
+    { page: 'locaties', title: 'Locaties & contracten', copy: 'Vind een klantlocatie en de bijbehorende serviceafspraken.', image: 'locations' },
+    { page: 'compatibiliteit', title: 'Compatibiliteit', copy: 'Bekijk per model de ondersteunde functies en de status van de praktijktests.', image: 'catalog' },
+];
+const maintenanceLink = { page: 'onderhoud', title: 'Onderhoud', copy: 'Plan een bezoek en bekijk controles en servicerapporten.' };
+function WorkspaceLinks({ current }) {
+    return (react_1.default.createElement("nav", { className: "workspace-links", "aria-label": "Gerelateerde onderdelen" },
+        react_1.default.createElement("div", { className: "setupresources" }, workspaceLinks.map(link => {
+            const target = current === link.page ? maintenanceLink : link;
+            return (react_1.default.createElement("a", { className: "resourcecard", href: (0, exports.href)(target.page), key: link.page },
+                link.page === 'compatibiliteit' ? (react_1.default.createElement("span", { className: "catalog-sample" },
+                    react_1.default.createElement("span", { className: "catalog-kind" },
+                        react_1.default.createElement(ui_1.Icon, { name: ui_1.familyIcon.pager, size: 22 }),
+                        " Tweewegpager"),
+                    react_1.default.createElement("b", null, "Swissphone s.QUAD FLEX C35 met LTE"),
+                    react_1.default.createElement("span", { className: "catalog-source" }, "Beheerplatform \u00B7 Brandweerrooster API"))) : (react_1.default.createElement("span", { className: 'resource-photo photo-' + link.image, "aria-hidden": "true" })),
+                react_1.default.createElement("span", { className: "resource-copy" },
+                    react_1.default.createElement("strong", null, target.title),
+                    react_1.default.createElement("span", null, target.copy))));
+        })),
+        react_1.default.createElement("details", { className: "photo-credits" },
+            react_1.default.createElement("summary", null, "Fotocredits"),
+            react_1.default.createElement("p", null,
+                "Portofoons ter illustratie. Foto van ",
+                react_1.default.createElement("a", { href: "https://commons.wikimedia.org/wiki/File:Zwei_walkie-talkies_motorola_2019.jpg" }, "VSchagow"),
+                ", verkleind. ",
+                react_1.default.createElement("a", { href: "https://creativecommons.org/licenses/by-sa/4.0/" }, "CC BY-SA 4.0"),
+                "."),
+            react_1.default.createElement("p", null,
+                "Serverruimte ter illustratie. Foto van ",
+                react_1.default.createElement("a", { href: "https://commons.wikimedia.org/wiki/File:Datacenter_Server_Racks_(22370909788).jpg" }, "Carl Lender"),
+                ", verkleind en in de kaart bijgesneden. ",
+                react_1.default.createElement("a", { href: "https://creativecommons.org/licenses/by/2.0/" }, "CC BY 2.0"),
+                "."))));
 }
 function LocationRows({ devices }) {
     const withPosition = devices
@@ -19349,9 +19801,9 @@ function RegisterRepair({ data, site, repairs, close, saved, }) {
         } },
         react_1.default.createElement("form", { className: "formstack", onSubmit: submit },
             react_1.default.createElement(ui_1.Field, { title: "Reparatiereferentie" },
-                react_1.default.createElement("input", { name: "externalRef", maxLength: 100, required: true })),
+                react_1.default.createElement(ui_1.WrappingInput, { name: "externalRef", maxLength: 100, required: true })),
             react_1.default.createElement(ui_1.Field, { title: "Apparaat" },
-                react_1.default.createElement("select", { name: "deviceId", value: deviceId, onChange: (e) => setDeviceId(e.target.value), required: true },
+                react_1.default.createElement(ui_1.Select, { name: "deviceId", value: deviceId, onChange: (e) => setDeviceId(e.target.value), required: true },
                     react_1.default.createElement("option", { value: "", disabled: true }, "Kies een beschikbaar apparaat"),
                     devices.map((d) => (react_1.default.createElement("option", { key: d.id, value: d.id },
                         d.name,
@@ -19360,14 +19812,14 @@ function RegisterRepair({ data, site, repairs, close, saved, }) {
                         " \u00B7 ",
                         d.serial))))),
             react_1.default.createElement(ui_1.Field, { title: "Leentoestel (optioneel)" },
-                react_1.default.createElement("select", { key: 'loan-' + deviceId, name: "replacementId", defaultValue: "", disabled: !device },
+                react_1.default.createElement(ui_1.Select, { key: 'loan-' + deviceId, name: "replacementId", defaultValue: "", disabled: !device },
                     react_1.default.createElement("option", { value: "" }, "Geen leentoestel"),
                     loans.map((d) => (react_1.default.createElement("option", { key: d.id, value: d.id },
                         d.name,
                         " \u00B7 ",
                         d.serial))))),
             react_1.default.createElement(ui_1.Field, { title: "Gekoppeld incident (optioneel)" },
-                react_1.default.createElement("select", { key: 'incident-' + deviceId, name: "incidentId", defaultValue: "", disabled: !device },
+                react_1.default.createElement(ui_1.Select, { key: 'incident-' + deviceId, name: "incidentId", defaultValue: "", disabled: !device },
                     react_1.default.createElement("option", { value: "" }, "Geen gekoppeld incident"),
                     data.incidents
                         .filter((i) => i.deviceId === deviceId)
@@ -19473,7 +19925,7 @@ function RepairDetails({ id, data, canWrite, close, changed, }) {
                         event.note && react_1.default.createElement("small", null, event.note)))))),
             canWrite && phases[repair.status].next.length > 0 && (react_1.default.createElement("form", { className: "formstack", onSubmit: advance },
                 react_1.default.createElement(ui_1.Field, { title: "Volgende status" },
-                    react_1.default.createElement("select", { disabled: busy, value: phase, onChange: (e) => setPhase(e.target.value), required: true },
+                    react_1.default.createElement(ui_1.Select, { disabled: busy, value: phase, onChange: (e) => setPhase(e.target.value), required: true },
                         react_1.default.createElement("option", { value: "", disabled: true }, "Kies de volgende status"),
                         phases[repair.status].next.map((next) => (react_1.default.createElement("option", { value: next, key: next }, phases[next].title))))),
                 react_1.default.createElement(ui_1.Field, { title: needsApproval ? 'Ontvangen goedkeuring' : 'Notitie (optioneel)' },
@@ -19513,7 +19965,7 @@ function Repairs({ data, site, canWrite }) {
     return (react_1.default.createElement(react_1.default.Fragment, null,
         react_1.default.createElement(ui_1.Section, { title: "Reparatiedossiers", action: canWrite && (react_1.default.createElement(fleet_1.Action, { icon: "plus", disabled: !repairs || !data.devices.some((d) => !site || d.site === site), onClick: () => setNewRepair(true) }, "Reparatie aanmelden")) },
             react_1.default.createElement("div", { className: "filters" },
-                react_1.default.createElement("select", { "aria-label": "Dossierstatus", value: filter, onChange: (e) => setFilter(e.target.value) },
+                react_1.default.createElement(ui_1.Select, { "aria-label": "Dossierstatus", value: filter, onChange: (e) => setFilter(e.target.value) },
                     react_1.default.createElement("option", { value: "active" }, "Openstaande dossiers"),
                     react_1.default.createElement("option", { value: "closed" }, "Gesloten dossiers"),
                     react_1.default.createElement("option", { value: "" }, "Alle dossiers"))),
@@ -19595,7 +20047,7 @@ function Visits({ data, site }) {
     const vs = data.visits.filter((v) => (!site || v.site === site) && (!status || v.status === status));
     return (react_1.default.createElement("section", { className: "panel" },
         react_1.default.createElement("div", { className: "filters" },
-            react_1.default.createElement("select", { value: status, "aria-label": "Bezoekstatus", onChange: (e) => setStatus(e.target.value) },
+            react_1.default.createElement(ui_1.Select, { value: status, "aria-label": "Bezoekstatus", onChange: (e) => setStatus(e.target.value) },
                 react_1.default.createElement("option", { value: "" }, "Alle statussen"),
                 ['planned', 'in_progress', 'completed'].map((s) => (react_1.default.createElement("option", { key: s, value: s }, (0, model_1.label)(s)))))),
         vs.length ? (react_1.default.createElement("div", { className: "tablewrap" },
@@ -19613,26 +20065,46 @@ function Visits({ data, site }) {
                             react_1.default.createElement("span", { className: "miniicon" },
                                 react_1.default.createElement(ui_1.Icon, { name: "tool" })),
                             react_1.default.createElement("strong", null, v.title))),
-                    react_1.default.createElement("td", null, (0, model_1.when)(v.due, true)),
-                    react_1.default.createElement("td", null, v.site),
-                    react_1.default.createElement("td", null,
+                    react_1.default.createElement("td", { "data-label": "Gepland op" }, (0, model_1.when)(v.due, true)),
+                    react_1.default.createElement("td", { "data-label": "Locatie" }, v.site),
+                    react_1.default.createElement("td", { "data-label": "Voortgang" },
                         Object.keys((0, model_1.visitResults)(v)).length,
                         " / ",
                         v.deviceIds.length),
-                    react_1.default.createElement("td", null,
+                    react_1.default.createElement("td", { "data-label": "Status" },
                         react_1.default.createElement(ui_1.Badge, { value: v.status }))))))))) : (react_1.default.createElement(ui_1.Empty, null, "Geen onderhoudsbezoeken gevonden."))));
 }
 function ResultForm({ v, id, save, close }) {
-    const prior = (0, model_1.visitResults)(v)[id];
-    const [outcome, setOutcome] = (0, react_1.useState)(prior?.outcome || ''), [err, setErr] = (0, react_1.useState)(''), [busy, setBusy] = (0, react_1.useState)(false);
+    // Freeze the baseline when the form opens. Polling may replace v during an edit.
+    const [baseline, setBaseline] = (0, react_1.useState)(() => (0, model_1.visitResults)(v)[id] ?? null);
+    const [outcome, setOutcome] = (0, react_1.useState)(baseline?.outcome || ''), [note, setNote] = (0, react_1.useState)(baseline?.note || ''), [comparison, setComparison] = (0, react_1.useState)(null), [err, setErr] = (0, react_1.useState)(''), [busy, setBusy] = (0, react_1.useState)(false);
     async function submit(e) {
         e.preventDefault();
         setBusy(true);
         setErr('');
-        const note = String(new FormData(e.currentTarget).get('note') || '');
         try {
-            await save('/api/visits/' + encodeURIComponent(v.id) + '/results', { deviceId: id, outcome, note }, 'Controleresultaat opgeslagen.');
+            const previous = baseline && { outcome: baseline.outcome, note: baseline.note, at: baseline.at };
+            await save('/api/visits/' + encodeURIComponent(v.id) + '/results', { deviceId: id, outcome, note, previous }, 'Controleresultaat opgeslagen.');
             close();
+        }
+        catch (e) {
+            setErr(e.message);
+        }
+        finally {
+            setBusy(false);
+        }
+    }
+    async function compare() {
+        setBusy(true);
+        setComparison(null);
+        try {
+            const current = (await (0, model_1.api)('/api/dashboard')).visits.find(visit => visit.id === v.id);
+            if (!current || current.status === 'completed')
+                throw new Error('Dit bezoek is niet meer open.');
+            const saved = (0, model_1.visitResults)(current)[id];
+            if (!saved)
+                throw new Error('Er is nog geen opgeslagen resultaat. Je kunt je invoer opnieuw opslaan.');
+            setComparison(saved);
         }
         catch (e) {
             setErr(e.message);
@@ -19643,29 +20115,45 @@ function ResultForm({ v, id, save, close }) {
     }
     return (react_1.default.createElement("form", { className: "formstack", onSubmit: submit },
         react_1.default.createElement(ui_1.Field, { title: "Uitkomst" },
-            react_1.default.createElement("select", { required: true, value: outcome, onChange: (e) => setOutcome(e.target.value) },
+            react_1.default.createElement(ui_1.Select, { required: true, value: outcome, onChange: (e) => setOutcome(e.target.value) },
                 react_1.default.createElement("option", { disabled: true, value: "" }, "Kies een uitkomst"),
                 ['passed', 'failed', 'skipped'].map((s) => (react_1.default.createElement("option", { key: s, value: s }, (0, model_1.label)(s)))))),
         react_1.default.createElement(ui_1.Field, { title: outcome === 'skipped' ? 'Reden voor overslaan en vervolgactie' : 'Notitie' },
-            react_1.default.createElement("textarea", { name: "note", required: outcome === 'skipped', defaultValue: prior?.note || '', rows: 3 })),
+            react_1.default.createElement("textarea", { name: "note", required: outcome === 'skipped', value: note, onChange: e => setNote(e.target.value), rows: 3 })),
         err && (react_1.default.createElement("p", { role: "alert", className: "error" }, err)),
+        err && !comparison && (react_1.default.createElement(fleet_1.Action, { kind: "secondary", disabled: busy, onClick: compare }, "Opgeslagen resultaat bekijken")),
+        comparison && (react_1.default.createElement("div", { className: "formstack" },
+            react_1.default.createElement("strong", null, "Opgeslagen resultaat"),
+            react_1.default.createElement("p", null,
+                (0, model_1.label)(comparison.outcome),
+                " \u00B7 ",
+                (0, model_1.when)(comparison.at, true),
+                " \u00B7 ",
+                comparison.technician),
+            comparison.note && react_1.default.createElement("p", null, comparison.note),
+            react_1.default.createElement(fleet_1.Action, { kind: "secondary", disabled: busy, onClick: () => {
+                    setBaseline(comparison);
+                    setComparison(null);
+                    setErr('');
+                } }, "Deze versie als uitgangspunt nemen"))),
         react_1.default.createElement("div", { className: "formactions" },
             react_1.default.createElement(fleet_1.Action, { kind: "secondary", onClick: close }, "Annuleren"),
             react_1.default.createElement("button", { disabled: busy, className: "button primary" }, "Resultaat opslaan"))));
 }
 function VisitDetail({ data, v, save, canWrite, }) {
-    const [editing, setEditing] = (0, react_1.useState)(''), [reports, setReports] = (0, react_1.useState)([]), [report, setReport] = (0, react_1.useState)(null), [err, setErr] = (0, react_1.useState)(''), [busy, setBusy] = (0, react_1.useState)(false), [confirm, setConfirm] = (0, react_1.useState)(false);
+    const [editing, setEditing] = (0, react_1.useState)(''), [reports, setReports] = (0, react_1.useState)(null), [reportLoadError, setReportLoadError] = (0, react_1.useState)(''), [reportAttempt, setReportAttempt] = (0, react_1.useState)(0), [report, setReport] = (0, react_1.useState)(null), [err, setErr] = (0, react_1.useState)(''), [busy, setBusy] = (0, react_1.useState)(false), [confirm, setConfirm] = (0, react_1.useState)(false);
     const [revision, setRevision] = (0, react_1.useState)(false);
     const base = '/api/visits/' + encodeURIComponent(v.id), results = (0, model_1.visitResults)(v), count = Object.keys(results).length;
     (0, react_1.useEffect)(() => {
         let current = true;
+        setReportLoadError('');
         (0, model_1.api)('/api/service/reports?visitId=' + encodeURIComponent(v.id))
             .then((r) => current && setReports(r.reports))
-            .catch((e) => current && setErr(e.message));
+            .catch((e) => current && setReportLoadError(e.message));
         return () => {
             current = false;
         };
-    }, [v.id]);
+    }, [v.id, reportAttempt]);
     async function run(task) {
         setBusy(true);
         setErr('');
@@ -19680,6 +20168,8 @@ function VisitDetail({ data, v, save, canWrite, }) {
         }
     }
     async function issue(reason = '') {
+        if (!reports)
+            return;
         await run(async () => {
             const latest = reports.reduce((max, r) => Math.max(max, r.version), 0);
             const r = await (0, model_1.api)('/api/service/reports', 'POST', {
@@ -19688,7 +20178,7 @@ function VisitDetail({ data, v, save, canWrite, }) {
             });
             setRevision(false);
             setReport(r.report);
-            setReports((old) => [r.report, ...old.filter((x) => x.id !== r.report.id)]);
+            setReports((old) => [r.report, ...(old || []).filter((x) => x.id !== r.report.id)]);
         });
     }
     async function open(id) {
@@ -19731,7 +20221,9 @@ function VisitDetail({ data, v, save, canWrite, }) {
                 react_1.default.createElement(ui_1.Badge, { value: r?.outcome || 'untested', text: r ? (0, model_1.label)(r.outcome) : 'Nog te controleren' }),
                 canWrite && v.status !== 'completed' && (react_1.default.createElement(fleet_1.Action, { kind: "subtle", onClick: () => setEditing(id) }, r ? 'Wijzigen' : 'Invullen'))));
         })),
-        react_1.default.createElement(ui_1.Section, { title: "Servicerapporten", action: canWrite ? (react_1.default.createElement(fleet_1.Action, { kind: "secondary", icon: "report", disabled: busy, onClick: () => (reports.length ? setRevision(true) : issue()) }, "Rapport vastleggen")) : undefined }, reports.length ? (reports.map((r) => (react_1.default.createElement("button", { key: r.id, className: "row-link fullrow", disabled: busy, onClick: () => open(r.id) },
+        react_1.default.createElement(ui_1.Section, { title: "Servicerapporten", action: canWrite ? (react_1.default.createElement(fleet_1.Action, { kind: "secondary", icon: "report", disabled: busy || reports === null, onClick: () => (reports?.length ? setRevision(true) : issue()) }, "Rapport vastleggen")) : undefined }, reportLoadError ? (react_1.default.createElement(react_1.default.Fragment, null,
+            react_1.default.createElement("p", { className: "error", role: "alert" }, reportLoadError),
+            react_1.default.createElement(fleet_1.Action, { kind: "secondary", onClick: () => setReportAttempt((attempt) => attempt + 1) }, "Rapporten opnieuw laden"))) : reports === null ? (react_1.default.createElement("p", { role: "status" }, "Rapporten worden geladen\u2026")) : reports.length ? (reports.map((r) => (react_1.default.createElement("button", { key: r.id, className: "row-link fullrow", disabled: busy, onClick: () => open(r.id) },
             react_1.default.createElement("span", { className: "miniicon" },
                 react_1.default.createElement(ui_1.Icon, { name: "report" })),
             react_1.default.createElement("span", { className: "rowcontent" },
@@ -19852,9 +20344,9 @@ function ServiceSiteForm({ save, close }) {
     return (react_1.default.createElement("form", { className: "formstack", onSubmit: submit },
         react_1.default.createElement("p", { className: "formnote" }, "De servicelocatie bepaalt bij welke klant het apparaat hoort. Een fysieke positie verschijnt zodra een meetbron die doorgeeft."),
         react_1.default.createElement(ui_1.Field, { title: "Klantnaam" },
-            react_1.default.createElement("input", { name: "customer", maxLength: 160, required: true })),
+            react_1.default.createElement(ui_1.WrappingInput, { name: "customer", maxLength: 160, required: true })),
         react_1.default.createElement(ui_1.Field, { title: "Naam van de servicelocatie" },
-            react_1.default.createElement("input", { name: "name", maxLength: 160, required: true })),
+            react_1.default.createElement(ui_1.WrappingInput, { name: "name", maxLength: 160, required: true })),
         error && (react_1.default.createElement("p", { className: "error", role: "alert" }, error)),
         react_1.default.createElement("div", { className: "formactions" },
             react_1.default.createElement(fleet_1.Action, { kind: "secondary", disabled: busy, onClick: close }, "Annuleren"),
@@ -19890,9 +20382,9 @@ function ContractForm({ site, save, close }) {
             react_1.default.createElement("strong", null, site),
             ". Neem het kenmerk en de afgesproken responstijd over uit het contract."),
         react_1.default.createElement(ui_1.Field, { title: "Contractkenmerk" },
-            react_1.default.createElement("input", { name: "id", maxLength: 80, required: true })),
+            react_1.default.createElement(ui_1.WrappingInput, { name: "id", maxLength: 80, required: true })),
         react_1.default.createElement(ui_1.Field, { title: "Contractnaam" },
-            react_1.default.createElement("input", { name: "name", maxLength: 160, required: true })),
+            react_1.default.createElement(ui_1.WrappingInput, { name: "name", maxLength: 160, required: true })),
         react_1.default.createElement(ui_1.Field, { title: "Afgesproken responstijd in uren" },
             react_1.default.createElement("input", { type: "number", name: "responseHours", min: "1", step: "1", required: true })),
         error && (react_1.default.createElement("p", { className: "error", role: "alert" }, error)),
@@ -20123,7 +20615,7 @@ function SiteCollectors({ site, hosted }) {
                 react_1.default.createElement("strong", null, site),
                 " in te sturen."),
             react_1.default.createElement(ui_1.Field, { title: "Naam van de collector" },
-                react_1.default.createElement("input", { name: "name", maxLength: 100, required: true })),
+                react_1.default.createElement(ui_1.WrappingInput, { name: "name", maxLength: 100, required: true })),
             error && (react_1.default.createElement("p", { className: "error", role: "alert" }, error)),
             react_1.default.createElement("div", { className: "formactions" },
                 react_1.default.createElement(fleet_1.Action, { kind: "secondary", disabled: busy, onClick: close }, "Annuleren"),
@@ -20182,6 +20674,8 @@ exports.Badge = Badge;
 exports.Empty = Empty;
 exports.Section = Section;
 exports.Field = Field;
+exports.Select = Select;
+exports.WrappingInput = WrappingInput;
 exports.DetailList = DetailList;
 exports.Modal = Modal;
 const react_1 = __importStar(require("react"));
@@ -20289,6 +20783,63 @@ function Field({ title, children }) {
         react_1.default.createElement("label", { htmlFor: id }, title),
         react_1.default.cloneElement(children, { id })));
 }
+// The native control handles focus, selection, validation and submission. On
+// narrow displays the selected option shares its box with a wrapping label.
+function Select({ children, onChange, ...props }) {
+    const ref = (0, react_1.useRef)(null);
+    const [caption, setCaption] = (0, react_1.useState)('');
+    function sync() { setCaption(ref.current?.selectedOptions[0]?.textContent?.trim() || ''); }
+    (0, react_1.useLayoutEffect)(sync);
+    (0, react_1.useEffect)(() => {
+        const form = ref.current?.form;
+        const onReset = () => requestAnimationFrame(sync);
+        form?.addEventListener('reset', onReset);
+        return () => form?.removeEventListener('reset', onReset);
+    }, []);
+    return react_1.default.createElement("span", { className: "selectcontrol" },
+        react_1.default.createElement("select", { ref: ref, ...props, onChange: event => { sync(); onChange?.(event); } }, children),
+        react_1.default.createElement("span", { className: "selectiontext", "aria-hidden": "true" }, caption));
+}
+// Keep one logical line in the submitted value while letting long names
+// occupy several visual lines at the user's chosen font size.
+function WrappingInput(props) {
+    const ref = (0, react_1.useRef)(null);
+    (0, react_1.useLayoutEffect)(() => {
+        const el = ref.current;
+        if (!el || (typeof CSS !== 'undefined' && CSS.supports?.('field-sizing', 'content')))
+            return;
+        function fit() {
+            if (!el)
+                return;
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight + el.offsetHeight - el.clientHeight) + 'px';
+        }
+        fit();
+        let lastWidth = 0;
+        const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(entries => {
+            const width = entries[0].contentRect.width;
+            if (width !== lastWidth) {
+                lastWidth = width;
+                fit();
+            }
+        });
+        observer?.observe(el);
+        el.addEventListener('input', fit);
+        return () => { observer?.disconnect(); el.removeEventListener('input', fit); };
+    }, []);
+    return react_1.default.createElement("textarea", { ref: ref, rows: 1, ...props, className: "wrapinput", onInput: event => {
+            const el = event.currentTarget;
+            if (/[\r\n]/.test(el.value))
+                el.value = el.value.replace(/[\r\n]+/g, ' ');
+            props.onInput?.(event);
+        }, onKeyDown: event => {
+            props.onKeyDown?.(event);
+            if (!event.defaultPrevented && event.key === 'Enter' && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                event.currentTarget.form?.requestSubmit();
+            }
+        } });
+}
 function DetailList({ items }) {
     return (react_1.default.createElement("dl", { className: "details" }, items.map(([key, value]) => (react_1.default.createElement("div", { key: key },
         react_1.default.createElement("dt", null, key),
@@ -20302,9 +20853,21 @@ function Modal({ title, children, onClose, }) {
         const trigger = document.activeElement;
         if (d && !d.open)
             d.showModal();
+        const viewport = window.visualViewport;
+        const updateVisibleArea = () => {
+            if (!d || !viewport)
+                return;
+            d.style.setProperty('--visible-height', viewport.height + 'px');
+            d.style.setProperty('--visible-top', viewport.offsetTop + 'px');
+        };
+        updateVisibleArea();
+        viewport?.addEventListener('resize', updateVisibleArea);
+        viewport?.addEventListener('scroll', updateVisibleArea);
         const before = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         return () => {
+            viewport?.removeEventListener('resize', updateVisibleArea);
+            viewport?.removeEventListener('scroll', updateVisibleArea);
             d?.close();
             document.body.style.overflow = before;
             if (trigger?.isConnected)
