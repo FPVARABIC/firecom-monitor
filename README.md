@@ -1,9 +1,9 @@
 # Firecom Servicemonitor
 
-[Open de webapp](https://fpvarabic.github.io/firecom-monitor/)
+[Open mijn werkruimte](https://fpvarabic.github.io/firecom-monitor/)
 
-De webapp opent op **Overzicht**. Onder **Compatibiliteit** vind je de apparaatprofielen, softwareversies en bronnen.
+De knop op de startpagina opent de beveiligde werkruimte in hetzelfde tabblad. Daar beheer je apparaten, incidenten, onderhoud, reparaties, locaties en contracten.
 
-Voor de apparaten, incidenten en onderhoudsgegevens van je eigen werkruimte kies je **Verbinden met werkruimte**. Meld je aan, bevestig de verbinding en houd het privévenster open tijdens het werken.
+De [openbare apparaatcatalogus](https://fpvarabic.github.io/firecom-monitor/catalogus.html) bevat modelprofielen en bronnen en is zonder aanmelding leesbaar.
 
-De [fotocredits en beeldlicenties](licenses/photos.txt) en de licenties van React, React DOM, Scheduler en DM Sans staan in [licenses/](licenses/).
+Zie [licenses](licenses/) voor de herkomst van het beeld en het lettertype.
