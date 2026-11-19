@@ -37,6 +37,8 @@ export function arrivalRoute(search, hash) {
     const query = new URLSearchParams(search);
     if (query.has('view'))
         return route(query.get('view'), query.get('item'));
+    if (query.has('route'))
+        return readHash(query.get('route') || '');
     if (hash.startsWith('#firecom-pair=') || /^#[a-f\d]{8}-[a-f\d-]{27}(?:&|$)/i.test(hash)) {
         return readHash(new URLSearchParams(hash.slice(1)).get('route') || '');
     }

@@ -1,4 +1,4 @@
-import { arrivalRoute, readHash, workspaceEntry } from './workspace-link.js?v=16a4c83d1ec5e34d';
+import { arrivalRoute, readHash, workspaceEntry } from './workspace-link.js?v=ff5ab300f06abdd4';
 
 // Old bookmarks and confirmation return URLs still land in the same tab.
 function openBookmark() {
