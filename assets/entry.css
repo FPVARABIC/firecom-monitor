@@ -34,3 +34,9 @@ summary{padding:.72rem 0;cursor:pointer;font-weight:680}
 li{margin-block:.55rem}
 ul{padding-inline-start:1.3rem}
 @media(max-width:46rem){.hero .wrap{grid-template-columns:1fr;gap:1.6rem}.hero img{max-width:32rem}.bar .wrap{min-height:3.75rem}}
+
+html[data-reading-pointer], html[data-reading-pointer] body { caret-color: transparent; }
+html[data-reading-pointer] :is(input, textarea, [contenteditable]:not([contenteditable="false"]), [role="textbox"]) { caret-color: auto; }
+
+body { cursor:default; }
+a[href],button,summary { cursor:pointer; }
