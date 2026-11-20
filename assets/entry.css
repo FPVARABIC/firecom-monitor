@@ -18,6 +18,8 @@ a{color:#423669;text-underline-offset:.2em}
 .hero p{font-size:1.125rem;margin:.8rem 0 1.5rem;max-width:42ch;color:#eae7f2}
 .hero img{display:block;width:100%;height:auto;border-radius:.9rem}
 .action{display:inline-block;border-radius:.6rem;padding:.7em 1.2em;line-height:1.45;font-weight:740;color:#292339;background:#ffeb39;text-decoration:none}
+.entry-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem 1.25rem}
+.registration-link{color:#fff;font-weight:680;text-underline-offset:.18em;overflow-wrap:anywhere}
 .action:hover{background:#ffdf4d;text-decoration:underline}
 .reference{padding-block:1.6rem 3rem}
 .reference h2{font-size:1.35rem;margin:0}

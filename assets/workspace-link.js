@@ -1,8 +1,8 @@
 // Only this host owns the authenticated operator session and service data.
 export const workspaceOrigin = 'https://servicemonitor-werkplaats.melianeahmed93162357.chatgpt.site';
 export const publicEntry = 'https://fpvarabic.github.io/firecom-monitor/';
-const sections = ['overzicht', 'apparaten', 'incidenten', 'onderhoud', 'reparaties', 'locaties', 'klanten', 'compatibiliteit'];
-const detailSections = ['reparaties', 'apparaten', 'incidenten', 'onderhoud', 'locaties', 'klanten'];
+const sections = ['overzicht', 'apparaten', 'registratie', 'incidenten', 'onderhoud', 'reparaties', 'locaties', 'klanten', 'compatibiliteit'];
+const detailSections = ['reparaties', 'apparaten', 'registratie', 'incidenten', 'onderhoud', 'locaties', 'klanten'];
 function route(page, id) {
     if (!page || !sections.includes(page))
         return '#/overzicht';
